@@ -33,9 +33,13 @@ public sealed class JsonCacheStore : ICacheStore
 
     public async Task<VerifiedCacheSnapshot?> GetLatestCacheAsync(CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (!File.Exists(_cacheFilePath))
             {
                 return null;
@@ -46,9 +50,13 @@ public sealed class JsonCacheStore : ICacheStore
             {
                 json = await File.ReadAllTextAsync(_cacheFilePath, cancellationToken).ConfigureAwait(false);
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
             catch (Exception)
             {
-                // Ошибка чтения повреждённого файла не должна ронять приложение
+                // Ошибка чтения повреждённого файла возвращает cache miss
                 return null;
             }
 
@@ -62,18 +70,23 @@ public sealed class JsonCacheStore : ICacheStore
             {
                 dto = JsonSerializer.Deserialize<CacheDocumentDto>(json, JsonOptions);
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
             catch (Exception)
             {
-                // Невалидный JSON возвращает cache miss
+                // Невалидный JSON или повреждённая структура возвращает cache miss
                 return null;
             }
 
-            // 1. Проверка версии схемы и метаданных
+            // 1. Строгая проверка версии схемы (отсутствующая версия не считается 1.0)
             if (dto == null || dto.Version != ExpectedSchemaVersion)
             {
                 return null;
             }
 
+            // 2. Проверка метки времени создания снимка
             if (dto.SnapshotDateUtc == default)
             {
                 return null;
@@ -100,6 +113,12 @@ public sealed class JsonCacheStore : ICacheStore
 
             foreach (var eDto in dto.RateSet.Entries)
             {
+                // Если элемент списка null (например Entries:[null]) — документ повреждён
+                if (eDto == null)
+                {
+                    return null;
+                }
+
                 if (string.IsNullOrWhiteSpace(eDto.Code) || !CurrencyCode.TryParse(eDto.Code, out var code))
                 {
                     return null; // Неизвестный код валюты в кэше
@@ -115,12 +134,12 @@ public sealed class JsonCacheStore : ICacheStore
                     return null; // Дубликат в кэше
                 }
 
-                // Единообразие дат записей: каждая запись должна иметь явную дату, в точности совпадающую с датой корня
+                // Единообразие дат записей: каждая запись должна иметь явную дату, совпадающую с датой корня
                 if (string.IsNullOrWhiteSpace(eDto.PublicationDate) ||
                     !DateOnly.TryParseExact(eDto.PublicationDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly entryPubDate) ||
                     entryPubDate != pubDate)
                 {
-                    return null; // Нельзя молча подменять дату плохой записи
+                    return null; // Запрещено молча исправлять неверную дату записи
                 }
 
                 if (code == CurrencyCode.Mdl)
@@ -131,14 +150,14 @@ public sealed class JsonCacheStore : ICacheStore
                     }
                     else
                     {
-                        return null; // MDL должен иметь курс 1 и номинал 1
+                        return null; // MDL должен иметь строго курс 1 и номинал 1
                     }
                 }
 
                 entries.Add(new CurrencyRateEntry(code, eDto.Nominal, eDto.RateValue, entryPubDate));
             }
 
-            // Базовый MDL=1 должен уже присутствовать в валидном сохранённом кэше (не подставляем задним числом в битый файл)
+            // Базовый MDL=1 обязан присутствовать изначально в сохранённом документе
             if (!hasValidMdl)
             {
                 return null;
@@ -160,6 +179,7 @@ public sealed class JsonCacheStore : ICacheStore
     public async Task SaveCacheAsync(RateSet rateSet, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(rateSet);
+        cancellationToken.ThrowIfCancellationRequested();
 
         // Валидация RateSet перед записью, чтобы повреждённые данные не вытеснили хороший кэш
         ValidateRateSetForCache(rateSet);
@@ -168,6 +188,8 @@ public sealed class JsonCacheStore : ICacheStore
         string? tempFilePath = null;
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             string? dir = Path.GetDirectoryName(_cacheFilePath);
             if (!string.IsNullOrEmpty(dir))
             {
@@ -184,7 +206,7 @@ public sealed class JsonCacheStore : ICacheStore
                     PublicationDate = rateSet.PublicationDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
                     SourceUrl = rateSet.SourceUrl,
                     RetrievedAtUtc = rateSet.RetrievedAtUtc,
-                    Entries = rateSet.Entries.Select(e => new CurrencyRateEntryDto
+                    Entries = rateSet.Entries.Select(e => (CurrencyRateEntryDto?)new CurrencyRateEntryDto
                     {
                         Code = e.Code.Value,
                         Nominal = e.Nominal,
@@ -205,6 +227,10 @@ public sealed class JsonCacheStore : ICacheStore
             // Атомарная замена целевого файла
             File.Move(tempFilePath, _cacheFilePath, overwrite: true);
             tempFilePath = null; // Успешно перемещён
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -272,25 +298,26 @@ public sealed class JsonCacheStore : ICacheStore
 
     private sealed class CacheDocumentDto
     {
-        public string Version { get; set; } = ExpectedSchemaVersion;
-        public string CacheSourceLabel { get; set; } = "BNM Official XML Cache";
+        // По умолчанию null, чтобы отсутствие поля version в JSON не подменялось на "1.0"
+        public string? Version { get; set; }
+        public string? CacheSourceLabel { get; set; }
         public DateTimeOffset SnapshotDateUtc { get; set; }
         public RateSetDto? RateSet { get; set; }
     }
 
     private sealed class RateSetDto
     {
-        public string PublicationDate { get; set; } = string.Empty;
-        public string SourceUrl { get; set; } = string.Empty;
+        public string? PublicationDate { get; set; }
+        public string? SourceUrl { get; set; }
         public DateTimeOffset RetrievedAtUtc { get; set; }
-        public List<CurrencyRateEntryDto> Entries { get; set; } = [];
+        public List<CurrencyRateEntryDto?>? Entries { get; set; }
     }
 
     private sealed class CurrencyRateEntryDto
     {
-        public string Code { get; set; } = string.Empty;
+        public string? Code { get; set; }
         public decimal Nominal { get; set; }
         public decimal RateValue { get; set; }
-        public string PublicationDate { get; set; } = string.Empty;
+        public string? PublicationDate { get; set; }
     }
 }
