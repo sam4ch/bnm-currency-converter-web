@@ -1,0 +1,22 @@
+# Local tools and credentials
+.tools/
+.venv/
+.env
+.env.*
+!.env.example
+*.user
+*.suo
+.vs/
+bin/
+obj/
+TestResults/
+coverage/
+*.trx
+*.log
+
+# Runtime exchange-rate cache must not be published
+App_Data/
+data/cache/
+
+# Assignment PDF is an input, not a project deliverable
+/*.pdf
