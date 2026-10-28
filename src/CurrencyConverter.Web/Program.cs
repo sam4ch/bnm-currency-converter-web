@@ -15,10 +15,20 @@ builder.Services.AddSingleton<IClock, ChisinauClock>();
 builder.Services.AddSingleton<ICurrencyCalculator, CurrencyCalculator>();
 builder.Services.AddSingleton<IValidationService, RequestValidator>();
 
-// Регистрация HTTP-клиента BNM с таймаутом
-builder.Services.AddHttpClient<IBnmRateClient, BnmRateClient>(client =>
+// Регистрация HTTP-клиента BNM с таймаутом и конфигурацией URL
+builder.Services.AddHttpClient(nameof(BnmRateClient), client =>
 {
     client.Timeout = BnmRateClient.DefaultTimeout;
+});
+
+builder.Services.AddTransient<IBnmRateClient>(sp =>
+{
+    var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+    var httpClient = httpClientFactory.CreateClient(nameof(BnmRateClient));
+    var clock = sp.GetRequiredService<IClock>();
+    var config = sp.GetRequiredService<IConfiguration>();
+    string baseUrl = config.GetValue<string>("Bnm:BaseUrl") ?? BnmRateClient.DefaultBaseUrl;
+    return new BnmRateClient(httpClient, clock, baseUrl);
 });
 
 // Регистрация постоянного файлового JSON-кэша в App_Data

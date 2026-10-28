@@ -5,6 +5,11 @@ namespace CurrencyConverter.Core.Models;
 /// </summary>
 public readonly struct CurrencyCode : IEquatable<CurrencyCode>, IComparable<CurrencyCode>
 {
+    private static readonly HashSet<string> SupportedCodes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "MDL", "EUR", "USD", "RON", "GBP"
+    };
+
     public static readonly CurrencyCode Mdl = new("MDL");
     public static readonly CurrencyCode Eur = new("EUR");
     public static readonly CurrencyCode Usd = new("USD");
@@ -15,11 +20,6 @@ public readonly struct CurrencyCode : IEquatable<CurrencyCode>, IComparable<Curr
     [
         Mdl, Eur, Usd, Ron, Gbp
     ];
-
-    private static readonly HashSet<string> SupportedCodes = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "MDL", "EUR", "USD", "RON", "GBP"
-    };
 
     public string Value { get; }
 

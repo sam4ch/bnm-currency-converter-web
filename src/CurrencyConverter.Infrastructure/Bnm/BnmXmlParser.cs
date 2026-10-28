@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Xml;
 using System.Xml.Linq;
 using CurrencyConverter.Core.Exceptions;
 using CurrencyConverter.Core.Models;
@@ -6,25 +7,46 @@ using CurrencyConverter.Core.Models;
 namespace CurrencyConverter.Infrastructure.Bnm;
 
 /// <summary>
-/// Парсер официального XML-документа курсов валют BNM (ValCurs).
+/// Безопасный парсер официального XML-документа курсов валют BNM (ValCurs).
 /// </summary>
 public static class BnmXmlParser
 {
+    public const int MaxAllowedXmlLength = 2_000_000;
+
     public static RateSet? Parse(string xmlContent, string sourceUrl, DateTimeOffset retrievedAtUtc)
     {
+        // Пустой HTTP body — отсутствие публикации
         if (string.IsNullOrWhiteSpace(xmlContent))
         {
-            throw new RateSourceFormatException("Получен пустой XML-ответ от источника BNM.");
+            return null;
+        }
+
+        if (xmlContent.Length > MaxAllowedXmlLength)
+        {
+            throw new RateSourceFormatException("Размер XML-документа превышает допустимый предел безопасности (2 МБ).");
         }
 
         XDocument doc;
         try
         {
-            doc = XDocument.Parse(xmlContent);
+            var settings = new XmlReaderSettings
+            {
+                DtdProcessing = DtdProcessing.Prohibit,
+                XmlResolver = null,
+                MaxCharactersInDocument = 1_000_000
+            };
+
+            using var stringReader = new StringReader(xmlContent);
+            using var xmlReader = XmlReader.Create(stringReader, settings);
+            doc = XDocument.Load(xmlReader);
+        }
+        catch (XmlException ex)
+        {
+            throw new RateSourceFormatException("Некорректный синтаксис XML в ответе BNM.", ex);
         }
         catch (Exception ex)
         {
-            throw new RateSourceFormatException("Некорректный синтаксис XML в ответе BNM.", ex);
+            throw new RateSourceFormatException("Ошибка при чтении XML-ответа BNM.", ex);
         }
 
         XElement? root = doc.Root;
@@ -79,9 +101,9 @@ public static class BnmXmlParser
                 throw new RateSourceFormatException($"В записи валюты '{rawCode}' отсутствует элемент Nominal.");
             }
 
-            if (!decimal.TryParse(nominalElem.Value.Trim(), NumberStyles.Any, CultureInfo.InvariantCulture, out decimal nominal))
+            if (!TryParseXmlDecimal(nominalElem.Value, out decimal nominal))
             {
-                throw new RateSourceFormatException($"Некорректный числовой формат Nominal для валюты '{rawCode}': '{nominalElem.Value}'.");
+                throw new RateSourceFormatException($"Некорректный числовой формат Nominal для валюты '{rawCode}': '{nominalElem.Value}'. Ожидается десятичное число с точкой без группировки.");
             }
 
             if (nominal <= 0)
@@ -94,9 +116,9 @@ public static class BnmXmlParser
                 throw new RateSourceFormatException($"В записи валюты '{rawCode}' отсутствует элемент Value.");
             }
 
-            if (!decimal.TryParse(valueElem.Value.Trim(), NumberStyles.Any, CultureInfo.InvariantCulture, out decimal rateValue))
+            if (!TryParseXmlDecimal(valueElem.Value, out decimal rateValue))
             {
-                throw new RateSourceFormatException($"Некорректный числовой формат Value для валюты '{rawCode}': '{valueElem.Value}'.");
+                throw new RateSourceFormatException($"Некорректный числовой формат Value для валюты '{rawCode}': '{valueElem.Value}'. Ожидается десятичное число с точкой без группировки.");
             }
 
             if (rateValue <= 0)
@@ -104,7 +126,7 @@ public static class BnmXmlParser
                 throw new RateSourceFormatException($"Курс для валюты '{rawCode}' должен быть строго больше нуля, получено: {rateValue}.");
             }
 
-            // Дополнительные корректные валюты в XML не инвалидируют весь документ, но мы сохраняем только поддерживаемые
+            // Дополнительные корректные валюты в XML не инвалидируют весь документ, но мы отбираем поддерживаемые
             if (CurrencyCode.IsSupported(rawCode))
             {
                 var code = CurrencyCode.Parse(rawCode);
@@ -112,7 +134,13 @@ public static class BnmXmlParser
             }
         }
 
-        // Базовая валюта MDL добавляется ТОЛЬКО после проверки, что ответ не пустой и содержит опубликованные курсы
+        // Если в ответе были валюты, но ни одна из них не поддерживается — не превращаем его в фиктивный набор из одного MDL
+        if (supportedEntries.Count == 0)
+        {
+            throw new RateSourceFormatException("В ответе BNM не найдено ни одной поддерживаемой валюты (EUR, USD, RON, GBP).");
+        }
+
+        // Базовая валюта MDL добавляется ТОЛЬКО после проверки, что ответ содержит валидные опубликованные валюты
         if (!supportedEntries.Any(e => e.Code == CurrencyCode.Mdl))
         {
             supportedEntries.Add(new CurrencyRateEntry(
@@ -123,5 +151,35 @@ public static class BnmXmlParser
         }
 
         return new RateSet(publicationDate, supportedEntries, sourceUrl, retrievedAtUtc);
+    }
+
+    private static bool TryParseXmlDecimal(string? raw, out decimal value)
+    {
+        value = 0m;
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return false;
+        }
+
+        string trimmed = raw.Trim();
+
+        // Проверка: только цифры и не более одной десятичной точки, без знаков +/-, пробелов, экспоненты и запятых
+        if (!trimmed.All(c => char.IsAsciiDigit(c) || c == '.'))
+        {
+            return false;
+        }
+
+        if (trimmed.StartsWith('.') || trimmed.EndsWith('.'))
+        {
+            return false;
+        }
+
+        int dotCount = trimmed.Count(c => c == '.');
+        if (dotCount > 1)
+        {
+            return false;
+        }
+
+        return decimal.TryParse(trimmed, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out value);
     }
 }

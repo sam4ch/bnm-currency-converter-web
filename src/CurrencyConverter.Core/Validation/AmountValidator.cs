@@ -53,10 +53,30 @@ public static class AmountValidator
             return false;
         }
 
-        // Проверка на отрицательный знак
+        // Проверка на ведущие знаки плюс и минус
+        if (trimmed.StartsWith('+'))
+        {
+            error = new ValidationError("amount-leading-plus", "validation.amount.leading_plus", "Ведущий знак плюс не допускается.", fieldName);
+            return false;
+        }
+
         if (trimmed.StartsWith('-'))
         {
             error = new ValidationError("amount-negative", "validation.amount.negative", "Сумма должна быть положительным числом больше нуля.", fieldName);
+            return false;
+        }
+
+        // Проверка на отсутствие цифр перед разделителем (например, '.5' или ',5')
+        if (trimmed.StartsWith('.') || trimmed.StartsWith(','))
+        {
+            error = new ValidationError("amount-missing-integer-part", "validation.amount.missing_integer", "Сумма должна начинаться с цифры; запись без целой части не допускается.", fieldName);
+            return false;
+        }
+
+        // Проверка на отсутствие цифр после разделителя (например, '1.' или '1,')
+        if (trimmed.EndsWith('.') || trimmed.EndsWith(','))
+        {
+            error = new ValidationError("amount-incomplete-fraction", "validation.amount.incomplete_fraction", "Укажите дробную часть после десятичного разделителя.", fieldName);
             return false;
         }
 
@@ -71,15 +91,8 @@ public static class AmountValidator
             return false;
         }
 
-        // Проверка допустимых символов: только цифры, плюс и один разделитель
-        string charsToCheck = trimmed.StartsWith('+') ? trimmed[1..] : trimmed;
-        if (charsToCheck.Length == 0)
-        {
-            error = new ValidationError("amount-invalid", "validation.amount.invalid", "Сумма должна содержать числовое значение.", fieldName);
-            return false;
-        }
-
-        if (charsToCheck.Any(c => !char.IsAsciiDigit(c) && c != '.' && c != ','))
+        // Проверка допустимых символов: только цифры и один разделитель
+        if (trimmed.Any(c => !char.IsAsciiDigit(c) && c != '.' && c != ','))
         {
             error = new ValidationError("amount-invalid-characters", "validation.amount.characters", "Сумма может содержать только цифры и десятичный разделитель (точку или запятую).", fieldName);
             return false;
@@ -87,10 +100,10 @@ public static class AmountValidator
 
         // Определение количества знаков после запятой
         int decimalPlaces = 0;
-        int sepIndex = charsToCheck.IndexOfAny(['.', ',']);
+        int sepIndex = trimmed.IndexOfAny(['.', ',']);
         if (sepIndex >= 0)
         {
-            string fraction = charsToCheck[(sepIndex + 1)..];
+            string fraction = trimmed[(sepIndex + 1)..];
             decimalPlaces = fraction.Length;
 
             if (decimalPlaces == 0)
@@ -107,7 +120,7 @@ public static class AmountValidator
         }
 
         // Нормализация к точке для инвариантного парсинга
-        string normalizedString = charsToCheck.Replace(',', '.');
+        string normalizedString = trimmed.Replace(',', '.');
 
         if (!decimal.TryParse(normalizedString, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out decimal parsedValue))
         {

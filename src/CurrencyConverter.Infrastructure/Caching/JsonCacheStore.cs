@@ -7,10 +7,12 @@ using CurrencyConverter.Core.Models;
 namespace CurrencyConverter.Infrastructure.Caching;
 
 /// <summary>
-/// Реализация файлового JSON-кэша курсов валют с атомарной записью.
+/// Реализация файлового JSON-кэша курсов валют с атомарной записью и строгой валидацией снимков.
 /// </summary>
 public sealed class JsonCacheStore : ICacheStore
 {
+    public const string ExpectedSchemaVersion = "1.0";
+
     private readonly string _cacheFilePath;
     private readonly SemaphoreSlim _lock = new(1, 1);
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -62,33 +64,50 @@ public sealed class JsonCacheStore : ICacheStore
             }
             catch (Exception)
             {
-                // Невалидный JSON не роняет приложение
+                // Невалидный JSON возвращает cache miss
                 return null;
             }
 
-            if (dto?.RateSet == null || dto.RateSet.Entries == null || dto.RateSet.Entries.Count == 0)
+            // 1. Проверка версии схемы и метаданных
+            if (dto == null || dto.Version != ExpectedSchemaVersion)
             {
                 return null;
             }
 
-            if (!DateOnly.TryParseExact(dto.RateSet.PublicationDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly pubDate))
+            if (dto.SnapshotDateUtc == default)
+            {
+                return null;
+            }
+
+            if (dto.RateSet == null || string.IsNullOrWhiteSpace(dto.RateSet.SourceUrl) || dto.RateSet.RetrievedAtUtc == default)
+            {
+                return null;
+            }
+
+            if (!DateOnly.TryParseExact(dto.RateSet.PublicationDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly pubDate) || pubDate == default)
+            {
+                return null;
+            }
+
+            if (dto.RateSet.Entries == null || dto.RateSet.Entries.Count == 0)
             {
                 return null;
             }
 
             var entries = new List<CurrencyRateEntry>();
             var seenCodes = new HashSet<CurrencyCode>();
+            bool hasValidMdl = false;
 
             foreach (var eDto in dto.RateSet.Entries)
             {
-                if (!CurrencyCode.TryParse(eDto.Code, out var code))
+                if (string.IsNullOrWhiteSpace(eDto.Code) || !CurrencyCode.TryParse(eDto.Code, out var code))
                 {
-                    continue;
+                    return null; // Неизвестный код валюты в кэше
                 }
 
                 if (eDto.Nominal <= 0 || eDto.RateValue <= 0)
                 {
-                    return null; // Повреждённые данные записи в кэше
+                    return null; // Повреждённые числовые данные в кэше
                 }
 
                 if (!seenCodes.Add(code))
@@ -96,32 +115,40 @@ public sealed class JsonCacheStore : ICacheStore
                     return null; // Дубликат в кэше
                 }
 
-                DateOnly entryPubDate = pubDate;
-                if (!string.IsNullOrWhiteSpace(eDto.PublicationDate) &&
-                    DateOnly.TryParseExact(eDto.PublicationDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly epd))
+                // Единообразие дат записей: каждая запись должна иметь явную дату, в точности совпадающую с датой корня
+                if (string.IsNullOrWhiteSpace(eDto.PublicationDate) ||
+                    !DateOnly.TryParseExact(eDto.PublicationDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly entryPubDate) ||
+                    entryPubDate != pubDate)
                 {
-                    entryPubDate = epd;
+                    return null; // Нельзя молча подменять дату плохой записи
+                }
+
+                if (code == CurrencyCode.Mdl)
+                {
+                    if (eDto.Nominal == 1m && eDto.RateValue == 1m)
+                    {
+                        hasValidMdl = true;
+                    }
+                    else
+                    {
+                        return null; // MDL должен иметь курс 1 и номинал 1
+                    }
                 }
 
                 entries.Add(new CurrencyRateEntry(code, eDto.Nominal, eDto.RateValue, entryPubDate));
             }
 
-            if (entries.Count == 0)
+            // Базовый MDL=1 должен уже присутствовать в валидном сохранённом кэше (не подставляем задним числом в битый файл)
+            if (!hasValidMdl)
             {
                 return null;
-            }
-
-            // Убеждаемся, что MDL присутствует
-            if (!entries.Any(e => e.Code == CurrencyCode.Mdl))
-            {
-                entries.Add(new CurrencyRateEntry(CurrencyCode.Mdl, 1m, 1m, pubDate));
             }
 
             var rateSet = new RateSet(pubDate, entries, dto.RateSet.SourceUrl, dto.RateSet.RetrievedAtUtc);
             return new VerifiedCacheSnapshot(
                 dto.SnapshotDateUtc,
                 rateSet,
-                dto.Version ?? VerifiedCacheSnapshot.CurrentVersion,
+                dto.Version,
                 dto.CacheSourceLabel ?? "BNM Official XML Cache");
         }
         finally
@@ -133,6 +160,9 @@ public sealed class JsonCacheStore : ICacheStore
     public async Task SaveCacheAsync(RateSet rateSet, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(rateSet);
+
+        // Валидация RateSet перед записью, чтобы повреждённые данные не вытеснили хороший кэш
+        ValidateRateSetForCache(rateSet);
 
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
         string? tempFilePath = null;
@@ -146,7 +176,7 @@ public sealed class JsonCacheStore : ICacheStore
 
             var dto = new CacheDocumentDto
             {
-                Version = VerifiedCacheSnapshot.CurrentVersion,
+                Version = ExpectedSchemaVersion,
                 CacheSourceLabel = "BNM Official XML Cache",
                 SnapshotDateUtc = rateSet.RetrievedAtUtc,
                 RateSet = new RateSetDto
@@ -198,9 +228,51 @@ public sealed class JsonCacheStore : ICacheStore
         }
     }
 
+    private static void ValidateRateSetForCache(RateSet rateSet)
+    {
+        if (rateSet.PublicationDate == default)
+        {
+            throw new CacheException("Нельзя сохранить в кэш набор с пустой датой публикации.");
+        }
+
+        if (string.IsNullOrWhiteSpace(rateSet.SourceUrl))
+        {
+            throw new CacheException("Нельзя сохранить в кэш набор с пустым SourceUrl.");
+        }
+
+        if (rateSet.RetrievedAtUtc == default)
+        {
+            throw new CacheException("Нельзя сохранить в кэш набор без метки времени получения.");
+        }
+
+        if (rateSet.Entries == null || rateSet.Entries.Count == 0)
+        {
+            throw new CacheException("Нельзя сохранить в кэш пустой набор записей курсов.");
+        }
+
+        var mdlEntry = rateSet.GetEntry(CurrencyCode.Mdl);
+        if (mdlEntry == null || mdlEntry.Nominal != 1m || mdlEntry.RateValue != 1m)
+        {
+            throw new CacheException("Набор курсов для сохранения в кэш должен содержать валидную запись MDL с курсом и номиналом 1.");
+        }
+
+        foreach (var entry in rateSet.Entries)
+        {
+            if (entry.PublicationDate != rateSet.PublicationDate)
+            {
+                throw new CacheException($"Дата публикации записи '{entry.Code}' ({entry.PublicationDate:dd.MM.yyyy}) не совпадает с датой набора ({rateSet.PublicationDate:dd.MM.yyyy}).");
+            }
+
+            if (entry.Nominal <= 0 || entry.RateValue <= 0)
+            {
+                throw new CacheException($"Запись '{entry.Code}' содержит неположительные числовые значения.");
+            }
+        }
+    }
+
     private sealed class CacheDocumentDto
     {
-        public string Version { get; set; } = "1.0";
+        public string Version { get; set; } = ExpectedSchemaVersion;
         public string CacheSourceLabel { get; set; } = "BNM Official XML Cache";
         public DateTimeOffset SnapshotDateUtc { get; set; }
         public RateSetDto? RateSet { get; set; }

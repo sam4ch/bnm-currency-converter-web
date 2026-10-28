@@ -26,6 +26,8 @@ public sealed class BnmRateClient : IBnmRateClient
 
     public async Task<RateSet?> GetRatesForDateAsync(DateOnly date, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         string dateString = date.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture);
         string requestUrl = $"{_baseUrl}{dateString}";
 
@@ -37,7 +39,12 @@ public sealed class BnmRateClient : IBnmRateClient
         {
             response = await _httpClient.GetAsync(requestUrl, cts.Token).ConfigureAwait(false);
         }
-        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Внешняя отмена не должна маскироваться под сетевой таймаут
+            throw;
+        }
+        catch (OperationCanceledException ex)
         {
             throw new RateSourceUnavailableException(
                 $"Превышено время ожидания ответа от источника BNM ({DefaultTimeout.TotalSeconds:0} сек.) при запросе на дату {dateString}.",
@@ -56,23 +63,36 @@ public sealed class BnmRateClient : IBnmRateClient
                 ex);
         }
 
-        if (!response.IsSuccessStatusCode)
+        using (response)
         {
-            throw new RateSourceUnavailableException(
-                $"Сервер BNM вернул ошибку HTTP {(int)response.StatusCode} ({response.ReasonPhrase}) при запросе на дату {dateString}.");
-        }
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new RateSourceUnavailableException(
+                    $"Сервер BNM вернул ошибку HTTP {(int)response.StatusCode} ({response.ReasonPhrase}) при запросе на дату {dateString}.");
+            }
 
-        string xmlContent;
-        try
-        {
-            xmlContent = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            throw new RateSourceUnavailableException("Ошибка чтения ответа от сервера BNM.", ex);
-        }
+            string xmlContent;
+            try
+            {
+                xmlContent = await response.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (OperationCanceledException ex)
+            {
+                throw new RateSourceUnavailableException(
+                    $"Превышено время ожидания при чтении тела ответа от источника BNM ({dateString}).",
+                    ex);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                throw new RateSourceUnavailableException("Ошибка чтения ответа от сервера BNM.", ex);
+            }
 
-        DateTimeOffset retrievedAtUtc = _clock.UtcNow;
-        return BnmXmlParser.Parse(xmlContent, requestUrl, retrievedAtUtc);
+            DateTimeOffset retrievedAtUtc = _clock.UtcNow;
+            return BnmXmlParser.Parse(xmlContent, requestUrl, retrievedAtUtc);
+        }
     }
 }

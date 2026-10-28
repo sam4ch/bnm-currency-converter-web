@@ -124,19 +124,8 @@ public sealed class ConversionService : IConversionService
                 $"Официальный источник курсов недоступен ({ex.Message}), и подходящий сохранённый кэш на запрошенную дату отсутствует.");
         }
 
-        // 4. Попытка сохранить полученный успешный ответ в постоянный кэш
-        string? cacheWarning = null;
-        try
-        {
-            await _cacheStore.SaveCacheAsync(rates, cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            // Ошибка записи кэша сохраняет успешный результат и выводит отдельное предупреждение
-            cacheWarning = $"Курс успешно получен, но не удалось сохранить локальный кэш: {ex.Message}";
-        }
-
-        // 5. Проверка наличия запрошенных валют в наборе
+        // 4. Проверка наличия запрошенных валют в наборе ДО сохранения кэша,
+        // чтобы непригодный для расчёта ответ не вытеснил рабочий кэш
         var sourceEntry = rates.GetEntry(request.SourceCurrency);
         var targetEntry = rates.GetEntry(request.TargetCurrency);
 
@@ -148,6 +137,18 @@ public sealed class ConversionService : IConversionService
                 request.TargetCurrency,
                 request.RequestedDate,
                 "В полученном наборе курсов отсутствуют данные для запрошенных валют.");
+        }
+
+        // 5. Попытка сохранить полученный успешный и пригодный ответ в постоянный кэш
+        string? cacheWarning = null;
+        try
+        {
+            await _cacheStore.SaveCacheAsync(rates, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            // Ошибка записи кэша сохраняет успешный результат и выводит отдельное предупреждение
+            cacheWarning = $"Курс успешно получен, но не удалось сохранить локальный кэш: {ex.Message}";
         }
 
         // 6. Расчёт сконвертированной суммы
