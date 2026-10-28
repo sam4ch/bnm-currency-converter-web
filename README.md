@@ -3,8 +3,11 @@
 Конвертер валют с графическим веб-интерфейсом, разработка по спецификации
 с помощью GitHub Spec Kit, GitHub Copilot и Google Antigravity.
 
-> Статус: подготовка окружения. Приложение ещё не реализовано.
-> Наличие шаблонов Spec Kit не означает, что Copilot уже создал спецификацию.
+> Статус: спецификации подготовлены и проверены до реализации.
+> Приложение и unit-тесты ещё не созданы; следующий этап — Google Antigravity.
+
+Этап документов: [PR №1](https://github.com/sam4ch/CurrencyConverter-Lab3/pull/1).
+Подготовлены 29 функциональных требований, 9 критериев успеха и 27 задач.
 
 ## Выбранное решение
 
@@ -29,6 +32,11 @@
 
 ## Документация
 
+- [Спецификация приложения](specs/001-currency-converter/spec.md)
+- [Технический план](specs/001-currency-converter/plan.md)
+- [Задачи и покрытие требований](specs/001-currency-converter/tasks.md)
+- [Анализ перед реализацией](specs/001-currency-converter/analysis.md)
+- [Ручной чек-лист UI — пока не выполнен](specs/001-currency-converter/checklists/manual-browser-checklist.md)
 - [Требования к приложению и критерии приёмки](docs/ASSIGNMENT_REQUIREMENTS.md)
 - [Промпты для этапа Copilot](docs/COPILOT_PROMPTS.md)
 - [Передача проекта в Antigravity](docs/ANTIGRAVITY_HANDOFF.md)
