@@ -1,7 +1,7 @@
 # Tasks: Currency Converter
 
 **Feature**: `001-currency-converter`
-**Status**: Draft implementation backlog for documentation-only planning
+**Status**: T001–T027 implemented and verified; browser checks recorded separately
 **Date**: 2026-10-28
 
 ## Repository layout
@@ -73,26 +73,26 @@ Notes:
 
 ### Phase 4 — Automated tests in `tests/currency-converter` branch
 
-- [ ] T020: Add parsing tests for valid BNM XML, including `MDL` base rate and `Nominal > 1`, valid extra currencies, and negative cases covering empty/invalid XML, missing date/value, duplicate codes, and invalid nominal/rate values. Dependencies: T011. Phase: tests. Scope: `tests/CurrencyConverter.Tests/**`. FR: FR-008, FR-009, FR-016, FR-017, FR-023. SC: SC-003, SC-004.
-- [ ] T021: Add conversion calculation tests covering direct, reverse, and cross-currency conversions on known fixtures, same-currency behavior, nominal handling, final rounding with `AwayFromZero`, and overflow. Dependencies: T007, T008. Phase: tests. Scope: `tests/CurrencyConverter.Tests/**`. FR: FR-007, FR-010, FR-011. SC: SC-002, SC-008.
-- [ ] T022: Add amount validation tests for both decimal forms, accepted values, rejected empty input, letters, zero, negatives, bounds, precision errors, grouping separators, exponent notation, and overflow; include exact boundary checks. Dependencies: T005. Phase: tests. Scope: `tests/CurrencyConverter.Tests/**`. FR: FR-002, FR-003, FR-004, FR-005. SC: SC-003.
-- [ ] T023: Add request validation tests for unsupported currencies, missing or future dates, and the Moldova local-date boundary with fixed clock values. Dependencies: T006. Phase: tests. Scope: `tests/CurrencyConverter.Tests/**`. FR: FR-006, FR-009, FR-016, FR-027. SC: SC-003.
-- [ ] T024: Add lookup tests for nearest previous publication, when the actual response date is earlier than requested, search window exhaustion, and immediate stop on timeout or network error with call-count verification. Dependencies: T009, T010. Phase: tests. Scope: `tests/CurrencyConverter.Tests/**`. FR: FR-013, FR-014, FR-015, FR-023. SC: SC-004, SC-005.
-- [ ] T025: Add orchestration tests covering identical-currency bypass, offline behavior with no cache and with valid cache requiring explicit consent, later-than-requested cache rejection, and cache write warning behavior without invalidating a successful result. Dependencies: T008, T012, T013, T014. Phase: tests. Scope: `tests/CurrencyConverter.Tests/**`. FR: FR-007, FR-018, FR-020, FR-021, FR-022, FR-025. SC: SC-004, SC-006, SC-008, SC-009.
-- [ ] T026: Add JSON cache store tests for atomic persistence, restart-safe read behavior, corrupt or missing file handling, stale/bad data not replacing valid cache, and concurrent-write safety keeping the document intact. Dependencies: T012, T013. Phase: tests. Scope: `tests/CurrencyConverter.Tests/**`. FR: FR-018, FR-019, FR-020. SC: SC-004, SC-006.
-- [ ] T027: Add test execution and CI-ready verification instructions that call `dotnet test` from the repository root, without claiming completion before those checks are actually run. Dependencies: T020, T021, T022, T023, T024, T025, T026. Phase: tests. Scope: `README.md`, `REPORT.md`, `tests/**`. FR: FR-008, FR-018, FR-027. SC: SC-001, SC-004, SC-006.
+- [x] T020: Add parsing tests for valid BNM XML, including `MDL` base rate and `Nominal > 1`, valid extra currencies, and negative cases covering empty/invalid XML, missing date/value, duplicate codes, and invalid nominal/rate values. Dependencies: T011. Phase: tests. Scope: `tests/CurrencyConverter.Tests/**`. FR: FR-008, FR-009, FR-016, FR-017, FR-023. SC: SC-003, SC-004.
+- [x] T021: Add conversion calculation tests covering direct, reverse, and cross-currency conversions on known fixtures, same-currency behavior, nominal handling, final rounding with `AwayFromZero`, and overflow. Dependencies: T007, T008. Phase: tests. Scope: `tests/CurrencyConverter.Tests/**`. FR: FR-007, FR-010, FR-011. SC: SC-002, SC-008.
+- [x] T022: Add amount validation tests for both decimal forms, accepted values, rejected empty input, letters, zero, negatives, bounds, precision errors, grouping separators, exponent notation, and overflow; include exact boundary checks. Dependencies: T005. Phase: tests. Scope: `tests/CurrencyConverter.Tests/**`. FR: FR-002, FR-003, FR-004, FR-005. SC: SC-003.
+- [x] T023: Add request validation tests for unsupported currencies, missing or future dates, and the Moldova local-date boundary with fixed clock values. Dependencies: T006. Phase: tests. Scope: `tests/CurrencyConverter.Tests/**`. FR: FR-006, FR-009, FR-016, FR-027. SC: SC-003.
+- [x] T024: Add lookup tests for nearest previous publication, when the actual response date is earlier than requested, search window exhaustion, and immediate stop on timeout or network error with call-count verification. Dependencies: T009, T010. Phase: tests. Scope: `tests/CurrencyConverter.Tests/**`. FR: FR-013, FR-014, FR-015, FR-023. SC: SC-004, SC-005.
+- [x] T025: Add orchestration tests covering identical-currency bypass, offline behavior with no cache and with valid cache requiring explicit consent, later-than-requested cache rejection, and cache write warning behavior without invalidating a successful result. Dependencies: T008, T012, T013, T014. Phase: tests. Scope: `tests/CurrencyConverter.Tests/**`. FR: FR-007, FR-018, FR-020, FR-021, FR-022, FR-025. SC: SC-004, SC-006, SC-008, SC-009.
+- [x] T026: Add JSON cache store tests for atomic persistence, restart-safe read behavior, corrupt or missing file handling, stale/bad data not replacing valid cache, and concurrent-write safety keeping the document intact. Dependencies: T012, T013. Phase: tests. Scope: `tests/CurrencyConverter.Tests/**`. FR: FR-018, FR-019, FR-020. SC: SC-004, SC-006.
+- [x] T027: Add test execution and CI-ready verification instructions that call `dotnet test` from the repository root, without claiming completion before those checks are actually run. Dependencies: T020, T021, T022, T023, T024, T025, T026. Phase: tests. Scope: `README.md`, `REPORT.md`, `tests/**`. FR: FR-008, FR-018, FR-027. SC: SC-001, SC-004, SC-006.
 
 ## Manual browser validation checklist
 
 This checklist is separate from xUnit tests and must be performed manually in a browser or device emulator.
 
-- [ ] M001: Verify the page remains usable on mobile and desktop widths.
-- [ ] M002: Verify Russian labels, validation messages, and form states are clear and readable.
-- [ ] M003: Verify keyboard navigation and focus order work for the amount, currencies, date, and submit controls.
-- [ ] M004: Verify the loading state disables form submission and removes stale results during a request.
-- [ ] M005: Verify the explicit cache confirmation flow appears only when required.
-- [ ] M006: Verify same-currency requests display no fake course metadata or source reference.
-- [ ] M007: Verify the page remains stable across retries, invalid inputs, and confirmation flows.
+- [x] M001: Verify the page remains usable on mobile and desktop widths.
+- [x] M002: Verify Russian labels, validation messages, and form states are clear and readable.
+- [x] M003: Verify keyboard navigation and focus order work for the amount, currencies, date, and submit controls.
+- [x] M004: Verify the loading state disables form submission and removes stale results during a request.
+- [x] M005: Verify the explicit cache confirmation flow appears only when required.
+- [x] M006: Verify same-currency requests display no fake course metadata or source reference.
+- [x] M007: Verify the page remains stable across retries, invalid inputs, and confirmation flows.
 
 ## Traceability table
 
@@ -147,8 +147,7 @@ Each relevant FR maps to at least one implementation task and one test or manual
 
 ## Concrete file targets
 
-These are planned file paths, not existing implementation files. The module
-scopes above do not authorize using branch names as source directories.
+The following table records the file targets chosen during planning. Implemented XML fixtures are C# fixture strings rather than separate XML files. Branch names are not source directories.
 
 | Task | Planned file(s) |
 | --- | --- |
@@ -197,4 +196,4 @@ The inline list is a summary of the same checks, not additional completed tests.
 - T020 through T026 are test tasks to be executed after the implementation branch is merged into the test branch workflow, not before implementation is complete.
 - Manual validation items are separate from xUnit tasks and must not be mixed into automated test coverage.
 - No `[P]` markers are used because the task list deliberately avoids claiming independent workstreams without proof of actual source-file independence and dependency safety.
-- This backlog is a planning artifact only; it does not claim implementation execution or passing tests.
+- Execution evidence (28.10.2026): 162 xUnit tests passed without skips; 10 browser scenarios passed in Opera GX, with visual inspection of desktop/mobile screenshots. See docs/TEST_RESULTS.md and docs/BROWSER_VALIDATION.md. Browser automation and visual review are separate from unit tests; no physical-device acceptance is claimed.

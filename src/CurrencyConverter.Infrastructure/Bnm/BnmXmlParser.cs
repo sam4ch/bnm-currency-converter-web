@@ -21,6 +21,11 @@ public static class BnmXmlParser
             return null;
         }
 
+        if (retrievedAtUtc == default)
+        {
+            throw new RateSourceFormatException("Некорректная метка времени получения курсов.");
+        }
+
         if (xmlContent.Length > MaxAllowedXmlLength)
         {
             throw new RateSourceFormatException("Размер XML-документа превышает допустимый предел безопасности (2 МБ).");
@@ -61,7 +66,7 @@ public static class BnmXmlParser
             throw new RateSourceFormatException("В элементе ValCurs отсутствует обязательный атрибут 'Date'.");
         }
 
-        if (!DateOnly.TryParseExact(dateAttr.Value.Trim(), "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly publicationDate))
+        if (!DateOnly.TryParseExact(dateAttr.Value.Trim(), "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly publicationDate) || publicationDate == default)
         {
             throw new RateSourceFormatException($"Некорректный формат даты в атрибуте Date: '{dateAttr.Value}'. Ожидается формат DD.MM.YYYY.");
         }
@@ -130,17 +135,23 @@ public static class BnmXmlParser
             if (CurrencyCode.IsSupported(rawCode))
             {
                 var code = CurrencyCode.Parse(rawCode);
+
+                if (code == CurrencyCode.Mdl && (nominal != 1m || rateValue != 1m))
+                {
+                    throw new RateSourceFormatException($"Некорректные курс или номинал базовой валюты MDL в XML-ответе (курс: {rateValue}, номинал: {nominal}).");
+                }
+
                 supportedEntries.Add(new CurrencyRateEntry(code, nominal, rateValue, publicationDate));
             }
         }
 
-        // Если в ответе были валюты, но ни одна из них не поддерживается — не превращаем его в фиктивный набор из одного MDL
-        if (supportedEntries.Count == 0)
+        // Если в ответе не найдено ни одной поддерживаемой иностранной валюты — не создаём фиктивный набор из одного MDL
+        if (!supportedEntries.Any(e => e.Code != CurrencyCode.Mdl))
         {
-            throw new RateSourceFormatException("В ответе BNM не найдено ни одной поддерживаемой валюты (EUR, USD, RON, GBP).");
+            throw new RateSourceFormatException("В ответе BNM не найдено ни одной поддерживаемой иностранной валюты (EUR, USD, RON, GBP).");
         }
 
-        // Базовая валюта MDL добавляется ТОЛЬКО после проверки, что ответ содержит валидные опубликованные валюты
+        // Базовая валюта MDL добавляется ТОЛЬКО после подтверждения наличия опубликованных валют
         if (!supportedEntries.Any(e => e.Code == CurrencyCode.Mdl))
         {
             supportedEntries.Add(new CurrencyRateEntry(

@@ -30,6 +30,7 @@ public sealed class ConversionService : IConversionService
     public async Task<ConversionResult> ConvertAsync(ConversionRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
 
         // 1. Одинаковые валюты: возврат суммы без обращения к источнику и без кэша
         if (request.IsSameCurrency)
@@ -90,12 +91,18 @@ public sealed class ConversionService : IConversionService
         }
         catch (RateSourceException ex)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             // Ошибка источника (сеть, HTTP, таймаут, неверный XML или исчерпан поиск)
             // Проверяем наличие подходящего кэша для запроса подтверждения
             VerifiedCacheSnapshot? cachedSnapshot = null;
             try
             {
                 cachedSnapshot = await _cacheStore.GetLatestCacheAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch
             {
@@ -144,6 +151,10 @@ public sealed class ConversionService : IConversionService
         try
         {
             await _cacheStore.SaveCacheAsync(rates, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {

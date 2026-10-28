@@ -9,7 +9,14 @@ public sealed class ChisinauClock : IClock
 {
     private static readonly TimeZoneInfo ChisinauTimeZone = ResolveChisinauTimeZone();
 
-    public DateTimeOffset UtcNow => DateTimeOffset.UtcNow;
+    private readonly TimeProvider _timeProvider;
+
+    public ChisinauClock(TimeProvider? timeProvider = null)
+    {
+        _timeProvider = timeProvider ?? TimeProvider.System;
+    }
+
+    public DateTimeOffset UtcNow => _timeProvider.GetUtcNow();
 
     public DateTimeOffset NowInChisinau => TimeZoneInfo.ConvertTime(UtcNow, ChisinauTimeZone);
 

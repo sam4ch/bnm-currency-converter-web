@@ -20,9 +20,19 @@ public sealed class RateLookupService : IRateLookupService
     {
         var context = new RateLookupContext(requestedDate, RateLookupContext.DefaultMaxSearchDays);
 
+        DateOnly earliestAllowedDate = requestedDate.DayNumber >= context.MaxSearchDays
+            ? requestedDate.AddDays(-context.MaxSearchDays)
+            : DateOnly.MinValue;
+
         for (int offset = 0; offset <= context.MaxSearchDays; offset++)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            // Защита от underflow DateOnly.MinValue.AddDays(-offset)
+            if (requestedDate.DayNumber < offset)
+            {
+                break;
+            }
 
             DateOnly candidateDate = requestedDate.AddDays(-offset);
             context.CurrentCandidateDate = candidateDate;
@@ -41,11 +51,11 @@ public sealed class RateLookupService : IRateLookupService
 
             if (rateSet != null)
             {
-                // Если BNM вернул курс с датой позже запрошенной — это некорректно для исторического поиска
-                if (rateSet.PublicationDate > requestedDate)
+                // Дата ответа BNM должна находиться строго в 31-дневном окне от запрошенной даты
+                if (rateSet.PublicationDate > requestedDate || rateSet.PublicationDate < earliestAllowedDate)
                 {
                     throw new RateSourceFormatException(
-                        $"Дата публикации курса BNM ({rateSet.PublicationDate:dd.MM.yyyy}) позже запрошенной клиентом даты ({requestedDate:dd.MM.yyyy}).");
+                        $"Дата публикации курса BNM ({rateSet.PublicationDate:dd.MM.yyyy}) выходит за пределы допустимого окна поиска (от {earliestAllowedDate:dd.MM.yyyy} до {requestedDate:dd.MM.yyyy}).");
                 }
 
                 return rateSet;
