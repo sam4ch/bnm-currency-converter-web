@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>CurrencyConverter.Web</RootNamespace>
+    <AssemblyName>CurrencyConverter.Web</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CurrencyConverter.Core\CurrencyConverter.Core.csproj" />
+    <ProjectReference Include="..\CurrencyConverter.Infrastructure\CurrencyConverter.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
