@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>CurrencyConverter.Core</RootNamespace>
+    <AssemblyName>CurrencyConverter.Core</AssemblyName>
+  </PropertyGroup>
+
+</Project>

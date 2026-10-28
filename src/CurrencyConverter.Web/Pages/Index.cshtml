@@ -1,0 +1,233 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Конвертер валют BNM";
+}
+
+<div class="converter-wrapper">
+    <div class="converter-card">
+        <div class="card-header">
+            <h1 class="card-title">Конвертер валют</h1>
+            <p class="card-subtitle">Официальные курсы валют Национального банка Молдовы</p>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-error" role="alert" aria-live="assertive">
+                <svg class="alert-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <div class="alert-content">
+                    <strong>Ошибка:</strong> @Model.ErrorMessage
+                </div>
+            </div>
+        }
+
+        @if (Model.ShowCacheConfirmation)
+        {
+            <div class="alert alert-cache-prompt" role="alert" aria-live="polite">
+                <svg class="alert-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                <div class="alert-content">
+                    <div class="cache-prompt-text">@Model.CacheConfirmationMessage</div>
+                    @if (Model.CacheDate.HasValue)
+                    {
+                        <div class="cache-prompt-meta">
+                            Дата кэша: <strong>@Model.CacheDate.Value.ToString("dd.MM.yyyy")</strong>
+                            @if (Model.CacheTimestamp.HasValue)
+                            {
+                                <span>(сохранён: @Model.CacheTimestamp.Value.ToString("dd.MM.yyyy HH:mm"))</span>
+                            }
+                        </div>
+                    }
+                    <form method="post" class="cache-prompt-form">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="Amount" value="@Model.Amount" />
+                        <input type="hidden" name="SourceCurrency" value="@Model.SourceCurrency" />
+                        <input type="hidden" name="TargetCurrency" value="@Model.TargetCurrency" />
+                        <input type="hidden" name="RateDate" value="@Model.RateDate" />
+                        <input type="hidden" name="CacheApproved" value="true" />
+                        <button type="submit" id="useCachedButton" asp-page-handler="UseCached" class="btn btn-cached">
+                            Использовать сохранённый курс
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+
+        <form method="post" id="conversionForm" class="converter-form" novalidate>
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="cacheApproved" name="CacheApproved" value="false" />
+
+            <div class="form-group amount-group">
+                <label for="amount" class="form-label">Сумма для конвертации</label>
+                <div class="input-wrapper">
+                    <input type="text"
+                           id="amount"
+                           name="Amount"
+                           value="@Model.Amount"
+                           class="form-input amount-input"
+                           inputmode="decimal"
+                           autocomplete="off"
+                           placeholder="0.00"
+                           aria-describedby="amountHelp"
+                           required />
+                </div>
+                <div id="amountHelp" class="field-help">Принимаются точка или запятая, до 4 знаков дроби (макс. 1 000 000 000 000)</div>
+                <div id="amountError" class="field-error" aria-live="polite"></div>
+            </div>
+
+            <div class="currencies-row">
+                <div class="form-group currency-group">
+                    <label for="sourceCurrency" class="form-label">Исходная валюта</label>
+                    <select id="sourceCurrency" name="SourceCurrency" class="form-select">
+                        @foreach (var curr in Model.SupportedCurrencies)
+                        {
+                            <option value="@curr" selected="@(curr == Model.SourceCurrency)">@curr</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="swap-wrapper">
+                    <button type="button" id="swapCurrencies" class="btn-swap" title="Поменять валюты местами" aria-label="Поменять исходную и целевую валюты">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M7 16V4m0 0L3 8m4-4l4 4m6 4v12m0 0l4-4m-4 4l-4-4"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="form-group currency-group">
+                    <label for="targetCurrency" class="form-label">Целевая валюта</label>
+                    <select id="targetCurrency" name="TargetCurrency" class="form-select">
+                        @foreach (var curr in Model.SupportedCurrencies)
+                        {
+                            <option value="@curr" selected="@(curr == Model.TargetCurrency)">@curr</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group date-group">
+                <label for="rateDate" class="form-label">Дата курса валюты</label>
+                <input type="date"
+                       id="rateDate"
+                       name="RateDate"
+                       value="@Model.RateDate"
+                       max="@Model.TodayDate"
+                       class="form-input date-input"
+                       required />
+                <div class="field-help">По умолчанию: текущая дата по времени Кишинёва. Будущие даты недопустимы.</div>
+                <div id="dateError" class="field-error" aria-live="polite"></div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" id="convertButton" class="btn btn-primary" disabled>
+                    <span class="btn-text">Конвертировать</span>
+                    <span class="btn-spinner" aria-hidden="true"></span>
+                </button>
+            </div>
+        </form>
+
+        @if (Model.HasResult && Model.Result != null)
+        {
+            <div id="conversionResult" class="result-card" aria-live="polite">
+                @if (Model.Result.SameCurrencyPath)
+                {
+                    <div class="result-header">
+                        <span class="result-badge badge-neutral">Курс не требуется</span>
+                    </div>
+                    <div class="result-values">
+                        <div class="result-formula">
+                            <span class="source-val">@Model.Result.SourceAmount.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture) @Model.Result.SourceCurrency</span>
+                            <span class="equals-sign">=</span>
+                            <span class="target-val">@Model.Result.ConvertedAmount?.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture) @Model.Result.TargetCurrency</span>
+                        </div>
+                    </div>
+                    <div class="result-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Выбранная дата:</span>
+                            <span class="detail-value">@Model.Result.RequestedDate.ToString("dd.MM.yyyy")</span>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="result-header">
+                        @if (Model.Result.UsedCacheFallback)
+                        {
+                            <span class="result-badge badge-warning">Использован сохранённый кэш</span>
+                        }
+                        else
+                        {
+                            <span class="result-badge badge-success">Официальный курс BNM</span>
+                        }
+
+                        @if (Model.Result.RateDateUsed.HasValue && Model.Result.RateDateUsed.Value < Model.Result.RequestedDate)
+                        {
+                            <span class="result-badge badge-info">Курс за предыдущую дату</span>
+                        }
+                    </div>
+
+                    <div class="result-values">
+                        <div class="result-formula">
+                            <span class="source-val">@Model.Result.SourceAmount.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture) @Model.Result.SourceCurrency</span>
+                            <span class="equals-sign">=</span>
+                            <span class="target-val">@Model.Result.ConvertedAmount?.ToString("N2", System.Globalization.CultureInfo.InvariantCulture) @Model.Result.TargetCurrency</span>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.WarningMessage))
+                    {
+                        <div class="result-warning" role="alert">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                            <span>@Model.WarningMessage</span>
+                        </div>
+                    }
+
+                    <div class="result-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Фактическая дата курса:</span>
+                            <span class="detail-value highlight-date">@(Model.Result.RateDateUsed?.ToString("dd.MM.yyyy") ?? "—")</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Запрошенная дата:</span>
+                            <span class="detail-value">@Model.Result.RequestedDate.ToString("dd.MM.yyyy")</span>
+                        </div>
+                        @if (!string.IsNullOrEmpty(Model.Result.SourceReference))
+                        {
+                            <div class="detail-item">
+                                <span class="detail-label">Источник курса:</span>
+                                <span class="detail-value">
+                                    <a href="@Model.Result.SourceReference" target="_blank" rel="noopener noreferrer" class="source-link">
+                                        Официальный XML BNM
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                            <polyline points="15 3 21 3 21 9"></polyline>
+                                            <line x1="10" y1="14" x2="21" y2="3"></line>
+                                        </svg>
+                                    </a>
+                                </span>
+                            </div>
+                        }
+                        @if (Model.Result.RetrievalTimestampUtc.HasValue)
+                        {
+                            <div class="detail-item">
+                                <span class="detail-label">Время получения:</span>
+                                <span class="detail-value">@Model.Result.RetrievalTimestampUtc.Value.ToString("dd.MM.yyyy HH:mm:ss") UTC</span>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

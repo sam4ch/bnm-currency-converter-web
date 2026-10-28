@@ -1,0 +1,39 @@
+@page
+@model ErrorModel
+@{
+    ViewData["Title"] = "Ошибка";
+}
+
+<div class="converter-wrapper">
+    <div class="converter-card">
+        <div class="card-header">
+            <h1 class="card-title">Произошла ошибка</h1>
+            <p class="card-subtitle">Во время обработки запроса возникла непредвиденная ошибка.</p>
+        </div>
+
+        <div class="alert alert-error" role="alert">
+            <svg class="alert-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <div class="alert-content">
+                <strong>Безопасное сообщение:</strong> Произошла ошибка на стороне сервера при выполнении операции. Пожалуйста, вернитесь на главную страницу и повторите попытку.
+            </div>
+        </div>
+
+        @if (Model.ShowRequestId)
+        {
+            <div class="result-details" style="margin-bottom: 1.5rem;">
+                <div class="detail-item">
+                    <span class="detail-label">Идентификатор запроса:</span>
+                    <span class="detail-value"><code>@Model.RequestId</code></span>
+                </div>
+            </div>
+        }
+
+        <div class="form-actions">
+            <a href="/" class="btn btn-primary" style="text-decoration: none; display: flex;">Вернуться на главную</a>
+        </div>
+    </div>
+</div>
