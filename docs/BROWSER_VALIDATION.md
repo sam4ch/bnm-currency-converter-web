@@ -1,45 +1,49 @@
-# Проверка браузерного интерфейса — 28.10.2026
+# Browser interface validation — October 28, 2026
 
-Проверено ассистентом через Playwright в установленной Opera GX 138.0.6044.45,
-с отдельным временным профилем. Это интеграционные браузерные проверки и
-визуальный просмотр скриншотов, отдельно от xUnit. Пользовательская приёмка
-на физическом телефоне не выполнялась. Edge отклонил запуск автоматизации
-политикой администратора; политика не менялась.
+The assistant tested the app through Playwright in installed Opera GX 138.0.6044.45,
+using a separate temporary profile. These are browser integration checks and
+visual screenshot reviews, separate from xUnit. User acceptance on a physical
+phone was not performed. Edge automation was blocked by administrator policy;
+that policy was not changed.
 
-Команда сборки: `dotnet build CurrencyConverter.sln --no-restore` — успешно,
-0 предупреждений, 0 ошибок. Приложение реально запускалось на локальном HTTP.
+Build command: `dotnet build CurrencyConverter.sln --no-restore` succeeded,
+with 0 warnings and 0 errors. The application actually ran over local HTTP.
+UI labels in the table are described by their English meanings.
 
-| Сценарий | Результат |
+| Scenario | Result |
 | --- | --- |
-| Пустая сумма, буквы, ноль, минус, экспонента, лишняя дробь/предел, `+1`, `.5`, `1.` | Кнопка заблокирована |
-| Точка/запятая, 0.0001 и верхняя граница суммы | Корректный ввод разрешён |
-| Будущая дата | Кнопка заблокирована |
-| Обмен валют, полный порядок Tab: сумма, исходная валюта, обмен, целевая валюта, дата, кнопка | Работают |
-| EUR → EUR, 123.4567 | Точное значение, «Курс не требуется», без метаданных курса |
-| Отправка формы | Кнопка заблокирована, прежний результат скрыт |
-| Реальный BNM, 100 EUR → MDL, 28.10.2026 | 2017.60 MDL; показаны фактическая/выбранная даты, ссылка и время |
-| Обход JavaScript, отправка `abc` напрямую | Сервер отвергает ввод, результата нет |
-| Перезапуск процесса с тем же JSON, источник недоступен | Сначала предложение кэша без результата; после явного подтверждения 2017.60 MDL |
-| Дата 27.10.2026 при кэше от 28.10.2026 | Более новый кэш не предложен |
-| Недоступный источник без файла кэша | Понятная ошибка, фиктивного результата нет |
-| USD → USD, 10,1234 без сети и без кэша | Точная сумма сохраняется |
-| Ширины 1280 и 390 px | Скриншоты просмотрены, горизонтального переполнения нет |
-| JavaScript pageerror | Ошибок нет |
+| Empty amount, letters, zero, minus, exponent, excess decimal places/limit, `+1`, `.5`, `1.` | Button disabled |
+| Dot/comma, 0.0001, and the maximum amount | Valid input accepted |
+| Future date | Button disabled |
+| Currency swap and full Tab order: amount, source currency, swap, target currency, date, button | Working |
+| EUR → EUR, 123.4567 | Exact value, rate-not-required status, no rate metadata |
+| Form submission | Button disabled; previous result hidden |
+| Live BNM, 100 EUR → MDL, 28.10.2026 | 2017.60 MDL; actual/selected dates, link, and timestamp shown |
+| JavaScript bypass, direct submission of `abc` | Server rejects input; no result |
+| Process restart with the same JSON and unavailable source | Cache offered without a result first; 2017.60 MDL only after explicit confirmation |
+| Date 27.10.2026 with cache dated 28.10.2026 | Newer cache not offered |
+| Unavailable source without a cache file | Clear error; no fabricated result |
+| USD → USD, 10,1234 offline without a cache | Exact amount preserved |
+| Widths of 1280 and 390 px | Screenshots reviewed; no horizontal overflow |
+| JavaScript pageerror | No errors |
 
-Проверка offline использует конфигурацию только собственного тестового процесса
-(`Bnm__BaseUrl=http://127.0.0.1:9/?date=`), системная сеть не отключалась.
-Для кэша использованы отдельные тестовые файлы в игнорируемой `.tools/`.
-Полные локальные протоколы: `.tools/browser-qa/1793197898520/results.json`.
+The offline check configured only its own test process
+(`Bnm__BaseUrl=http://127.0.0.1:9/?date=`); system networking was not disabled.
+Cache checks used isolated test files in ignored `.tools/`.
+Full local logs: `.tools/browser-qa/1793197898520/results.json`.
 
-Найденный реальный дефект: статическое поле `CurrencyCode.Mdl` создавалось
-раньше `SupportedCodes`, что приводило к `TypeInitializationException` при
-первой конвертации. Antigravity исправил порядок; повторный прогон прошёл.
-Дополнительно исправлены округление одинаковых валют, проверка будущей даты
-в JavaScript и скрытие старого результата во время запроса.
+An actual defect was found: static `CurrencyCode.Mdl` was initialized before
+`SupportedCodes`, causing `TypeInitializationException` on the first conversion.
+Antigravity corrected the order, and the repeated run passed.
+Same-currency rounding, JavaScript future-date validation, and hiding the previous
+result during a request were also fixed.
 
-![Интерфейс на компьютере](screenshots/desktop.png)
+![Desktop interface](screenshots/desktop.png)
 
-![Интерфейс на телефоне](screenshots/mobile.png)
+![Mobile interface](screenshots/mobile.png)
 
-
-Дополнительный итоговый прогон: **10/10 сценариев**. Проверен полный порядок клавиатурного фокуса, повтор без согласия не применяет кэш. Восстановление источника проверено на локальном HTTP-источнике с фиксированным XML: сначала 503, затем 200 в той же форме; ошибка исчезает, результат верен. Это контролируемый тест восстановления, отдельно от запроса к реальному BNM.
+Additional final run: **10/10 scenarios**. Verified the full keyboard-focus order
+and that retrying without consent does not apply the cache. Source recovery was
+checked using a local HTTP source with fixed XML: first 503, then 200 in the same
+form; the error disappeared and the result was correct. This controlled recovery
+check is separate from the live BNM request.

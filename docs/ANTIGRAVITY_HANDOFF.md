@@ -1,58 +1,58 @@
-# Передача реализации Google Antigravity
+# Handoff to Google Antigravity
 
-Этот документ содержит будущий запрос, а не свидетельство выполненной сборки.
-Начинать только после завершения Copilot-спецификаций, анализа и слияния их PR.
+This document contains a prompt for a future stage, not evidence of a completed build.
+Start only after Copilot specifications and analysis are complete and their PR is merged.
 
-## Подготовка
+## Preparation
 
-1. Убедиться, что в Git есть commit со спецификациями, но ещё нет кода.
-2. Открыть этот репозиторий в Google Antigravity, войти в свой аккаунт.
-3. Записать точное имя выбранной модели из интерфейса в REPORT.md.
-4. Создать ветку `feature/currency-converter` от актуального `main`.
+1. Verify that Git contains a specification commit but no application code yet.
+2. Open this repository in Google Antigravity and sign in to your account.
+3. Record the exact selected model name from the interface in REPORT.md.
+4. Create `feature/currency-converter` from the current `main`.
 
-## Запрос на реализацию
+## Implementation prompt
 
 ```text
-Реализуй лабораторную №3 «Конвертер валют» по артефактам Spec Kit.
-Сначала прочитай .specify/memory/constitution.md, .specify/feature.json,
+Implement Lab 3, Currency Converter, from the Spec Kit artifacts.
+First read .specify/memory/constitution.md, .specify/feature.json,
 spec.md, plan.md, research.md, data-model.md, quickstart.md, contracts,
-tasks.md, analysis.md активной спецификации и docs/ASSIGNMENT_REQUIREMENTS.md.
-Если feature.json отсутствует, найди единственную актуальную папку в specs/;
-при неоднозначности остановись и сообщи, что именно требуется выбрать.
+tasks.md, and analysis.md for the active specification, and docs/ASSIGNMENT_REQUIREMENTS.md.
+If feature.json is missing, find the single current folder in specs/;
+if the choice is ambiguous, stop and explain what needs to be selected.
 
-Работай в feature/currency-converter. Выполни задачи реализации по порядку,
-не меняя смысл утверждённых требований. Не выдумывай успешное выполнение.
-Приложение должно быть C#/.NET 8 с ASP.NET Core Razor Pages, использовать
-официальный XML BNM, decimal и Nominal, иметь понятный графический интерфейс,
-обрабатывать неверный ввод, отсутствие сети/публикации, одинаковые валюты
-и сохранять проверенный кэш между перезапусками. Не применять кэш молча.
+Work in feature/currency-converter. Complete implementation tasks in order
+without changing the meaning of approved requirements. Do not invent successful completion.
+The app must use C#/.NET 8 with ASP.NET Core Razor Pages, official BNM XML,
+decimal and Nominal, and a clear graphical interface. Handle invalid input,
+missing connectivity/publications, and same-currency conversion. Persist a
+validated cache across restarts. Never apply cached rates silently.
 
-Сохраняй осмысленные промежуточные коммиты. Проверь сборку и UI.
-Если находишь расхождение с документами, записывай конкретный случай,
-наблюдение, причину, исправление и способ проверки в REPORT.md.
-Не заявляй об отсутствии ошибок до проверки. Не придумывай название модели:
-если не можешь его определить, попроси студента переписать его из интерфейса.
-Обнови README реальными проверенными командами запуска.
-Не делай прямой push в main и не сливай ветки локально вместо GitHub PR.
-Задачи unit-тестов выполняются отдельным следующим этапом в tests/currency-converter.
+Keep meaningful intermediate commits. Check the build and UI.
+If you find a discrepancy with the documents, record the concrete case,
+observation, cause, fix, and verification method in REPORT.md.
+Do not claim an absence of errors before checking. Do not invent the model name:
+if you cannot determine it, ask the student to copy it from the interface.
+Update README with actual, verified launch commands.
+Do not push directly to main or merge branches locally instead of a GitHub PR.
+Unit-test tasks belong to the separate next stage in tests/currency-converter.
 ```
 
-## Запрос на тесты после PR реализации
+## Test prompt after the implementation PR
 
 ```text
-Прочитай конституцию, спецификацию, план, задачи, входные требования и REPORT.md.
-В ветке tests/currency-converter от main реализуй оставшиеся задачи xUnit:
-парсинг BNM XML и Nominal, расчёт в обе стороны/кросс-курс/одинаковые валюты,
-округление и переполнение, пустой/неверный ответ, валидация,
-offline, согласие на кэш, запись/повреждение/перезапуск кэша,
-историческая дата и поиск предыдущего опубликованного курса.
-Тесты должны быть воспроизводимыми без интернета: fixtures, поддельные HTTP и часы.
-Запусти dotnet test из корня и исправь реальные сбои. Нельзя подменять проверки
-константами, исключать падающие тесты либо объявлять неисполненные тесты успешными.
-Запиши фактические результаты, число тестов, версию SDK и найденные исправления
-в README/REPORT.md. Обнови статусы tasks.md только по выполненным задачам.
-Сделай отдельные коммиты для тестов и найденных исправлений, затем создай PR.
+Read the constitution, specification, plan, tasks, input requirements, and REPORT.md.
+In tests/currency-converter, branched from main, implement the remaining xUnit tasks:
+BNM XML and Nominal parsing; direct, inverse, cross-rate, and same-currency calculations;
+rounding and overflow; empty/invalid responses; validation; offline behavior;
+cache confirmation, writing, corruption, and restart; historical dates; and lookup
+of the previous published rate.
+Tests must be reproducible without internet access: fixtures, fake HTTP, and a fake clock.
+Run dotnet test from the root and fix actual failures. Do not replace checks with
+constants, exclude failing tests, or declare unexecuted tests successful.
+Record actual results, test count, SDK version, and fixes in README/REPORT.md.
+Update tasks.md statuses only for completed tasks.
+Make separate commits for tests and discovered fixes, then create a PR.
 ```
 
-После тестов проверить критерии приёмки вручную в браузере, записать результаты
-и закончить отчёт. Не заменять все ошибки выдуманными учебными примерами.
+After testing, check acceptance criteria manually in the browser, record the
+results, and complete the report. Do not replace actual errors with invented examples.

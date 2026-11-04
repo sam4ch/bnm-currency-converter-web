@@ -1,181 +1,194 @@
-# Отчёт: лабораторная №3
+# Lab 3 Report
 
-> Лабораторная работа №3: Конвертер валют на ASP.NET Core Razor Pages (.NET 8).
-> Статус: реализация T001–T027 и проверка приложения завершены.
-> Этап тестирования: `tests/currency-converter`, отдельный PR №3.
-> Проверено: 162/162 xUnit-теста, 0 пропусков; 10/10 браузерных сценариев.
+> Lab 3: Currency Converter with ASP.NET Core Razor Pages (.NET 8).
+> Status: T001–T027 implementation and application validation are complete.
+> Test stage: `tests/currency-converter`, separate PR #3.
+> Verified: 162/162 xUnit tests, 0 skips; 10/10 browser scenarios.
 
-## 1. Источник данных и обоснование
+## 1. Data source and rationale
 
-Выбран Национальный банк Молдовы: официальный открытый XML без API-ключа,
-курсы к MDL и применимость к местному контексту. Требуется учитывать `Nominal`,
-а не считать каждую запись курсом за одну единицу валюты.
-Банк публикует справочные официальные курсы, а не гарантированную цену сделки.
-Адрес: https://www.bnm.md/en/official_exchange_rates.
+The National Bank of Moldova was selected for its official public XML feed,
+absence of an API key, MDL-based rates, and relevance to the local context.
+`Nominal` must be respected rather than treating every entry as a per-unit rate.
+The bank publishes reference rates, not guaranteed transaction prices.
+Source: https://www.bnm.md/en/official_exchange_rates.
 
-## 2. Инструменты и фактически использованные модели
+## 2. Tools and models actually used
 
-| Этап | Инструмент | Что подтверждено |
+| Stage | Tool | Confirmed work |
 | --- | --- | --- |
-| Разбор PDF и настройка | Ассистент в текущем чате | Прочитан PDF, подготовлено окружение и исходные запросы |
-| Spec Kit | specify-cli 1.2.4 | Инициализация Copilot, PowerShell scripts, integration status: ok |
-| Конституция | Copilot в VS Code 1.108.2 | Создана и сохранена версия 1.0.0 |
-| Спецификация и проектирование | Copilot + Spec Kit | Созданы spec, plan, research, data-model, contracts и tasks; выполнены уточнения и анализ |
-| Заключительная проверка документов | Ассистент текущего чата | Проверено покрытие 29 FR / 9 SC / 27 задач; уточнены пути и создан чек-лист ручной проверки |
-| Модель Copilot | Auto в интерфейсе | Точное имя модели в режиме Auto не установлено |
-| Реализация Core/Infrastructure (T001–T014) | Antigravity CLI 1.4.9, модель Gemini 3.8 Flash High (gemini-3.8-flash-high) | Созданы решение .sln, проекты Core, Infrastructure, каркас Web и csproj тестов; реализованы T001–T014 |
-| Проверка сборки этапа 1 | Оркестратор в пользовательском терминале | Выполнен `dotnet build CurrencyConverter.sln`: 0 ошибок, 0 предупреждений. Проверен реальный BNM XML по сети: HTTP 200, ValCurs Date=28.10.2026, 40 Valute (курсы в код не зашивались) |
-| Реализация UI и исправления (T015–T019) | Antigravity CLI 1.4.9, модель Gemini 3.8 Flash High (gemini-3.8-flash-high) | Создан полноценный Razor Pages UI (Index.cshtml, Index.cshtml.cs, site.css, site.js, favicon.svg, Layout), исправлены замечания первой итерации |
-| Браузерное тестирование Opera GX (M001–M007) | Оркестратор в браузере Opera GX | Проверены все 9 браузерных сценариев, скриншоты сохранены в docs/BROWSER_VALIDATION.md. PR реализации №2 слит |
-| Тесты xUnit и регрессионные исправления (T020–T027) | Antigravity CLI 1.4.9, модель Gemini 3.8 Flash High (gemini-3.8-flash-high) | Созданы наборы тестов T020–T027 в `tests/CurrencyConverter.Tests`, фикстуры и хелперы (BnmXmlFixtures, FixedClock, TestHttpMessageHandler, TestDirectoryScope), устранены подтверждённые дефекты |
-| Исполнение тестов dotnet test | Ассистент Codex в терминале | 162 тестов прошли, 0 ошибок, 0 пропусков |
+| PDF analysis and setup | Assistant in the current chat | Read the PDF, prepared the environment and initial prompts |
+| Spec Kit | specify-cli 1.2.4 | Copilot initialization, PowerShell scripts, integration status: ok |
+| Constitution | Copilot in VS Code 1.108.2 | Created and saved version 1.0.0 |
+| Specification and design | Copilot + Spec Kit | Created spec, plan, research, data-model, contracts, and tasks; performed clarification and analysis |
+| Final document review | Assistant in the current chat | Verified coverage of 29 FR / 9 SC / 27 tasks; clarified paths and created the manual checklist |
+| Copilot model | Auto in the interface | Exact model selected in Auto mode was not established |
+| Core/Infrastructure implementation (T001–T014) | Antigravity CLI 1.4.9, Gemini 3.8 Flash High (gemini-3.8-flash-high) | Created the .sln, Core/Infrastructure projects, Web scaffold, and test csproj; implemented T001–T014 |
+| Stage 1 build validation | Orchestrator in the user's terminal | Ran `dotnet build CurrencyConverter.sln`: 0 errors, 0 warnings. Checked live BNM XML: HTTP 200, ValCurs Date=28.10.2026, 40 Valute entries; rates were not hardcoded |
+| UI implementation and fixes (T015–T019) | Antigravity CLI 1.4.9, Gemini 3.8 Flash High (gemini-3.8-flash-high) | Created the complete Razor Pages UI (Index.cshtml, Index.cshtml.cs, site.css, site.js, favicon.svg, Layout) and fixed first-iteration findings |
+| Opera GX browser tests (M001–M007) | Orchestrator in Opera GX | Checked all 9 browser scenarios; screenshots recorded in docs/BROWSER_VALIDATION.md. Implementation PR #2 merged |
+| xUnit tests and regression fixes (T020–T027) | Antigravity CLI 1.4.9, Gemini 3.8 Flash High (gemini-3.8-flash-high) | Created T020–T027 suites in `tests/CurrencyConverter.Tests`, fixtures/helpers (BnmXmlFixtures, FixedClock, TestHttpMessageHandler, TestDirectoryScope), and fixed confirmed defects |
+| dotnet test execution | Codex assistant in the terminal | 162 tests passed, 0 failures, 0 skips |
 
-## 3. Реализованные компоненты и первая сборка
+## 3. Implemented components and first build
 
-Первая генерация решения и проектов успешно скомпилировалась без ошибок и предупреждений. Это подтверждает создание каркаса и связей проектов. Корректность выполнения проверялась отдельно: браузер выявил ошибку статической инициализации CurrencyCode, а ревью — недостатки валидации и кэша. Ниже описано итоговое состояние компонентов; реальные доработки перечислены в разделе 4.
+The first generated solution and projects compiled without errors or warnings.
+This confirmed the scaffold and project references. Runtime correctness was
+checked separately: browser testing exposed a CurrencyCode static-initialization
+error, and review found validation/cache issues. The final components are
+described below; actual fixes are listed in section 4.
 
-- **Архитектурный каркас и контракты (T001–T004)**: `CurrencyConverter.sln`, `Directory.Build.props`, `CurrencyConverter.Core`, `CurrencyConverter.Infrastructure`, `CurrencyConverter.Web` и `CurrencyConverter.Tests`. Доменные модели: `Amount`, `CurrencyRateEntry`, `RateSet`, `RateDate`, `RateLookupContext`, `ConversionRequest`, `ConversionResult`, `VerifiedCacheSnapshot`. Использованы `DateOnly` для календарных дат и `DateTimeOffset` для меток времени (в `CurrencyCode` потребовалось исправление порядка статической инициализации, см. раздел 4).
-- **Математика и конвертация (T007–T008)**: `CurrencyCalculator` выполняет расчёты строго в `decimal` по формуле `amount * (ValueSource / NominalSource) / (ValueTarget / NominalTarget)` с финальным округлением `MidpointRounding.AwayFromZero` до 2 знаков. Одинаковые валюты мгновенно возвращают исходную сумму без сетевых обращений, чтения кэша и фиктивных метаданных курса.
-- **Валидация (T005–T006)**: `AmountValidator` принимает точку и запятую, отклоняет экспоненту, разделители групп/пробелы, буквы, ноль, отрицательные числа, переполнение и значения > 1 000 000 000 000 либо > 4 знаков дроби. `RequestValidator` проверяет даты по времени Кишинёва (`ChisinauClock` для Windows и Linux) и отклоняет будущие/невозможные даты.
-- **Парсер BNM XML и HTTP-клиент (T010–T011)**: `BnmXmlParser` проверяет структуру `ValCurs`, дату, номинал > 0, курс > 0, отсутствие дубликатов кодов; дополнительные корректные валюты не ломают парсинг; базовая валюта MDL добавляется только после подтверждения непустого ответа. `BnmRateClient` использует таймаут 10 секунд и транслирует ошибки сети/HTTP в доменные исключения.
-- **Исторический поиск (T009)**: `RateLookupService` проверяет запрошенную дату и до 31 предыдущего дня только при отсутствии публикации; сетевая или XML-ошибка немедленно прерывает поиск без 32-кратного повторения.
-- **Постоянный кэш и оркестрация (T012–T014)**: `JsonCacheStore` атомарно записывает кэш через временный файл в том же каталоге с синхронизацией `SemaphoreSlim`, повреждённый файл обрабатывается безопасно. `ConversionService` требует явного согласия пользователя перед использованием кэша (`CacheConfirmationRequired`), при подтверждении не делает лишних сетевых запросов, запрещает кэш с датой позже запрошенной, а ошибку записи кэша сохраняет как отдельное предупреждение без срыва успешного расчёта.
-- **Графический интерфейс Razor Pages (T015–T018)**:
-  - Создана удобная страница конвертера на русском языке с карточной структурой, крупными полями ввода и индиго-акцентом (`#4f46e5`).
-  - Форма содержит обязательные поля с устойчивыми HTML id (`amount`, `sourceCurrency`, `targetCurrency`, `rateDate`, `convertButton`, `swapCurrencies`, `conversionResult`, `useCachedButton`).
-  - Кнопка обмена валют меняет выбранные валюты местами в один клик.
-  - Клиентская валидация в `site.js` полностью синхронизирована с серверной грамматикой `AmountValidator`; кнопка блокируется при некорректном/пустом вводе и во время выполнения запроса с отображением индикатора загрузки.
-  - При одинаковых валютах отображается точная исходная сумма с бейджем «Курс не требуется» без выдуманных дат и источников.
-  - При недоступности сети и наличии подходящего кэша отображается блок предложения использовать сохранённый курс (`id="useCachedButton"`), а подтверждение отправляет повторный POST без лишнего сетевого вызова.
-  - Автономность: страница не зависит от внешних шрифтов, CDN, jQuery или Bootstrap; используются локальные стили `site.css`, скрипт `site.js` и векторный `favicon.svg`.
-- **Тестовая инфраструктура и фикстуры (T020–T027)**: В тестовом проекте `CurrencyConverter.Tests` реализованы полностью детерминированные компоненты и фикстуры без реального сетевого взаимодействия и внешних зависимостей:
-  - `FixedClock`: подменяемый источник времени Кишинёва с настраиваемой датой и UTC-временем без изменения системных часов;
-  - `TestHttpMessageHandler`: подменяемый HTTP-обработчик для перехвата запросов, эмуляции статус-кодов, таймаутов и сетевых исключений;
-  - `TestDirectoryScope`: временные изолированные каталоги для каждого теста кэша с автоматической очисткой, исключающие конфликт с рабочим `App_Data`;
-  - `BnmXmlFixtures`: набор строгих XML-фикстур для валидных ответов, различных номиналов, пустых ValCurs, дубликатов кодов, атак DTD/XXE и некорректных курсов.
+- **Architecture and contracts (T001–T004):** `CurrencyConverter.sln`, `Directory.Build.props`, `CurrencyConverter.Core`, `CurrencyConverter.Infrastructure`, `CurrencyConverter.Web`, and `CurrencyConverter.Tests`. Domain models: `Amount`, `CurrencyRateEntry`, `RateSet`, `RateDate`, `RateLookupContext`, `ConversionRequest`, `ConversionResult`, `VerifiedCacheSnapshot`. Calendar dates use `DateOnly`; timestamps use `DateTimeOffset`. CurrencyCode required a static-initialization-order fix, described in section 4.
+- **Calculations and conversion (T007–T008):** `CurrencyCalculator` uses only `decimal` and the formula `amount * (ValueSource / NominalSource) / (ValueTarget / NominalTarget)`, with final rounding to 2 places using `MidpointRounding.AwayFromZero`. Same-currency conversion immediately returns the original amount without network calls, cache reads, or fabricated rate metadata.
+- **Validation (T005–T006):** `AmountValidator` accepts a dot/comma and rejects exponent notation, grouping separators/spaces, letters, zero, negative numbers, overflow, amounts above 1,000,000,000,000, and more than 4 decimal places. `RequestValidator` checks dates in Chisinau time (`ChisinauClock` on Windows/Linux) and rejects future/impossible dates.
+- **BNM XML parser and HTTP client (T010–T011):** `BnmXmlParser` validates the `ValCurs` structure, date, positive nominal/rate, and unique currency codes. Additional valid currencies do not break parsing; MDL is added only after a nonempty response is verified. `BnmRateClient` uses a 10-second timeout and maps network/HTTP failures to domain exceptions.
+- **Historical lookup (T009):** `RateLookupService` checks the selected day and up to 31 previous days only when a publication is missing. Network or XML failure stops lookup immediately instead of repeating it 32 times.
+- **Persistent cache and orchestration (T012–T014):** `JsonCacheStore` uses atomic replacement through a temporary file in the same directory and `SemaphoreSlim` synchronization; corrupt files are handled safely. `ConversionService` requires explicit cache consent (`CacheConfirmationRequired`), avoids another network request after confirmation, rejects a cache newer than the requested date, and reports cache-write failure separately without discarding a successful calculation.
+- **Razor Pages UI (T015–T018):**
+  - Russian-language converter page with cards, large inputs, and an indigo accent (`#4f46e5`).
+  - Required fields have stable HTML IDs: `amount`, `sourceCurrency`, `targetCurrency`, `rateDate`, `convertButton`, `swapCurrencies`, `conversionResult`, `useCachedButton`.
+  - The swap button exchanges source and target currencies in one click.
+  - Client validation in `site.js` matches the server's `AmountValidator` grammar. Invalid/empty input and active requests disable submission, with a loading indicator.
+  - Same-currency conversion shows the exact amount and a rate-not-required badge, without invented dates or sources.
+  - If the network is unavailable and a suitable cache exists, the app offers saved rates (`id="useCachedButton"`); confirmation submits another POST without an unnecessary network call.
+  - The page does not depend on external fonts, CDNs, jQuery, or Bootstrap. It uses local `site.css`, `site.js`, and vector `favicon.svg`.
+- **Test infrastructure and fixtures (T020–T027):** `CurrencyConverter.Tests` contains deterministic components and fixtures without real network requests or external dependencies:
+  - `FixedClock`: replaceable Chisinau date/UTC time without changing system clocks.
+  - `TestHttpMessageHandler`: intercepts requests and simulates status codes, timeouts, and network exceptions.
+  - `TestDirectoryScope`: isolated temporary cache directories per test, cleaned automatically, avoiding conflicts with working `App_Data`.
+  - `BnmXmlFixtures`: strict XML fixtures for valid responses, different nominal values, empty ValCurs, duplicate codes, DTD/XXE attacks, and invalid rates.
 
-## 4. Ошибки агента и исправления
+UI statuses in this English report are descriptions of the original Russian labels.
 
-### Фактические исправления и уточнения реализации:
+## 4. Agent errors and fixes
 
-1. **Строгий синтаксис чисел в XML (`BnmXmlParser`)**:
-   - *Проблема*: Первоначальная реализация использовала `NumberStyles.Any`, что позволяло трактовать запятую как разделитель тысяч и принимать экспоненциальную запись.
-   - *Исправление*: Создан метод `TryParseXmlDecimal` с явной проверкой отсутствия запятых, экспоненты и знаков; разрешены только цифры и ровно одна точка (`NumberStyles.AllowDecimalPoint`).
-2. **Безопасность XML-парсера (`BnmXmlParser`)**:
-   - *Проблема*: Использовался стандартный `XDocument.Parse` без явного ограничения внешних сущностей DTD и лимита размера.
-   - *Исправление*: Парсер переведён на `XmlReader` с `DtdProcessing.Prohibit`, `XmlResolver = null` и ограничением размера входного документа 2 МБ.
-3. **Обработка отсутствия публикации и неподдерживаемых валют (`BnmXmlParser`)**:
-   - *Проблема*: Пустой ответ мог генерировать исключение формата, а документ без поддерживаемых валют мог превратиться в фиктивный набор из одного MDL.
-   - *Исправление*: Пустой HTTP body или `ValCurs` без `Valute` возвращает `null` (сигнал отсутствия публикации для поиска предыдущего дня в `RateLookupService`). Если все валюты в XML неподдерживаемые, генерируется ошибка формата без создания фиктивного MDL-набора.
-4. **Управление ресурсами и отменой в HTTP-клиенте (`BnmRateClient`)**:
-   - *Проблема*: `HttpResponseMessage` не освобождался гарантированно через `using`, таймаут `cts.Token` не охватывал `ReadAsStringAsync`, а внешняя отмена могла маскироваться под сетевой таймаут.
-   - *Исправление*: Добавлен блок `using (response)`, таймаут применён к вызову `ReadAsStringAsync(cts.Token)`, а при `cancellationToken.IsCancellationRequested` отмена не перехватывается, а пробрасывается напрямую.
-5. **Строгая валидация и целостность кэша (`JsonCacheStore`)**:
-   - *Проблема*: Чтение кэша подставляло дату корня в повреждённые записи `Entry.PublicationDate` и автоматически дописывало `MDL=1` в невалидный файл; запись не валидировала полноту `RateSet`.
-   - *Исправление*: Чтение кэша проверяет схему `Version == "1.0"`, непустой `SourceUrl`, непустые метки времени, строгое равенство даты каждой записи дате корня и обязательное исходное наличие записи `MDL=1`. Запись валидирует `RateSet` до создания временного файла.
-6. **Порядок проверки валют перед сохранением кэша (`ConversionService`)**:
-   - *Проблема*: Сохранение ответа BNM в кэш выполнялось до проверки наличия запрошенных валют, что могло вытеснить хороший кэш неполным ответом.
-   - *Исправление*: Проверка наличия исходной и целевой валюты вынесена перед вызовом `SaveCacheAsync`.
-7. **Синхронизация грамматики валидаторов (`AmountValidator` и `site.js`)**:
-   - *Проблема*: Серверный валидатор допускал ведущий `+` и форму `.5`, тогда как спецификация требует явного числа с целой частью.
-   - *Исправление*: Запрещены ведущий `+`, запись без целой части (`.5`), запись без дроби при наличии разделителя (`1.`) и пробелы. Идентичная логика реализована в JavaScript на клиенте.
-8. **Ограничение окружения shell**:
-   - *Проблема*: Вызов `run_command` отклонялся проверкой разрешений в интерактивном режиме.
-   - *Исправление*: Все компоненты Core, Infrastructure, Web и Tests созданы штатными файловыми инструментами платформы без обхода ограничений безопасности. Сборка решения выполнена оркестратором.
-9. **Форматирование дробных сумм при конвертации (`Index.cshtml`)**:
-   - *Проблема*: Использование `ToString("N2")` для исходной и целевой сумм при одинаковых валютах приводило к потере дробной части (например, `123.4567` отображалось как `123.46`).
-   - *Исправление*: Для одинаковых валют и для исходной суммы в обычных конвертациях используется точный формат до 4 знаков без округления (`ToString("0.####", CultureInfo.InvariantCulture)`), а результат конвертации разных валют округляется до 2 знаков (`ToString("N2", CultureInfo.InvariantCulture)`).
-10. **Очистка карточки результата от технических деталей (`Index.cshtml`)**:
-   - *Проблема*: В карточке одинаковых валют выводилось избыточное техническое описание о невыполнении сетевых запросов и отсутствии кэша.
-   - *Исправление*: Техническое описание удалено, сохранено лаконичное отображение выбранной даты и статуса «Курс не требуется».
-11. **Проверка даты в JavaScript на будущие значения (`site.js`)**:
-   - *Проблема*: В скрипте дата проверялась только на непустоту, из-за чего выбор будущей даты в браузерах без строгой блокировки `max` не блокировал кнопку отправки.
-   - *Исправление*: Добавлена функция `validateDate`, проверяющая `validity.valid`, `rangeOverflow` и атрибут `max`, с выводом понятной ошибки в элемент `#dateError` и блокировкой кнопки `convertButton`.
-12. **Безопасная обработка ошибок и логирование (`Index.cshtml.cs`, `Error.cshtml`, `Error.cshtml.cs`)**:
-   - *Проблема*: В блоках перехвата непредвиденных исключений в `Index.cshtml.cs` сообщение `ex.Message` выводилось пользователю, а стандартная страница ошибок `/Error` отсутствовала.
-   - *Исправление*: Добавлены страница `Pages/Error.cshtml` и модель `Error.cshtml.cs` с безопасным русским текстом и фиксацией `RequestId`. В `Index.cshtml.cs` внедрён `ILogger<IndexModel>`, непредвиденные исключения логируются на сервере, а пользователю выводится безопасное общее сообщение без раскрытия внутренних деталей.
-13. **Порядок статической инициализации в `CurrencyCode` (`CurrencyCode.cs`)**:
-   - *Проблема*: При первом реальном расчёте в браузере Opera GX возник `TypeInitializationException: The type initializer for 'CurrencyConverter.Core.Models.CurrencyCode' threw an exception. -> System.NullReferenceException` на строке 34 из-за вызова конструктора из `.cctor` на строке 8.
-   - *Причина*: Статические экземпляры `Mdl`, `Eur`, `Usd` и т.д. были объявлены выше статического поля `SupportedCodes`. В C# статические поля инициализируются строго сверху вниз; на момент выполнения `new("MDL")` коллекция `SupportedCodes` была равна `null`.
-   - *Исправление*: Поле `SupportedCodes` перенесено перед объявлением статических экземпляров кодов валют. Код `CurrencyCode` исключён из списка собранных корректно с первой попытки.
-14. **Строгая проверка версии в кэше (`JsonCacheStore`)**:
-   - *Проблема*: В классе DTO кэша свойство инициализировалось по умолчанию `public string Version { get; set; } = "1.0"`. При десериализации JSON без поля `"version"` свойство оставалось равным `"1.0"`, пропуская неверный файл кэша как валидный.
-   - *Исправление*: Свойство изменено на `public string? Version { get; set; }` без значения по умолчанию, а валидатор проверяет точное равенство `dto.Version == "1.0"`.
-15. **Обработка `null` записей в JSON-кэше (`JsonCacheStore`)**:
-   - *Проблема*: Наличие в массиве `"entries"` значений `null` (например, `[null]`) приводило к `NullReferenceException` при обращении к свойствам записи.
-   - *Исправление*: Свойство переведено на `List<CurrencyRateEntryDto?>?`, при обнаружении `null`-записей или некорректных данных файл отклоняется как повреждённый (cache miss), возвращая `null` без сбоя процесса.
-16. **Проброс внешней отмены `CancellationToken` (`ConversionService`, `JsonCacheStore`)**:
-   - *Проблема*: В блоках `catch (Exception ex)` при ошибках сохранения кэша или загрузки общих данных перехватывался `OperationCanceledException`, из-за чего отмена запроса могла маскироваться под предупреждение об ошибке кэша или ложную ошибку сервиса.
-   - *Исправление*: Добавлен фильтр исключений `catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }`, гарантирующий немедленный проброс отмены вызывающему коду.
-17. **Защита от underflow дат в историческом поиске (`RateLookupService`)**:
-   - *Проблема*: При вызове `requestedDate.AddDays(-offset)` для граничных минимальных дат (`DateOnly.MinValue`) возникало исключение `ArgumentOutOfRangeException`.
-   - *Исправление*: Добавлено условие `if (requestedDate.DayNumber < offset) break;`, предотвращающее выход за допустимый диапазон `DateOnly`.
-18. **Контроль даты публикаций в ответе BNM (`RateLookupService`)**:
-   - *Проблема*: Если BNM возвращал корректный XML, но с датой старше 31 календарного дня от запрошенной даты, ответ принимался сервисом.
-   - *Исправление*: Добавлена проверка `if (rateSet.PublicationDate < requestedDate.AddDays(-MaxLookbackDays)) throw new RateSourceFormatException(...)`, гарантирующая соблюдение 31-дневного окна поиска.
-19. **Строгая валидация записей MDL в ответе BNM (`BnmXmlParser`)**:
-   - *Проблема*: Если внешний XML содержал запись валюты `MDL` с некорректным номиналом или курсом (отличным от 1), она могла быть сохранена в набор курсов.
-   - *Исправление*: Добавлена проверка: если XML явно содержит валюту `MDL`, её номинал и курс обязаны быть строго равны 1, иначе документ бракуется (`RateSourceFormatException`). Также отклоняются XML, не содержащие ни одной поддерживаемой иностранной валюты.
+### Actual implementation fixes and clarifications
 
-## 5. Соответствие первоначальной спецификации
+1. **Strict XML number syntax (`BnmXmlParser`)**
+   - *Issue:* The initial `NumberStyles.Any` allowed a comma to be interpreted as a thousands separator and accepted exponential notation.
+   - *Fix:* Added `TryParseXmlDecimal`, explicitly rejecting commas, exponents, and signs; only digits and one decimal point are allowed (`NumberStyles.AllowDecimalPoint`).
+2. **XML parser security (`BnmXmlParser`)**
+   - *Issue:* Standard `XDocument.Parse` was used without explicit DTD/external-entity restrictions or a size limit.
+   - *Fix:* Switched to `XmlReader` with `DtdProcessing.Prohibit`, `XmlResolver = null`, and a 2 MB input limit.
+3. **Missing publications and unsupported currencies (`BnmXmlParser`)**
+   - *Issue:* An empty response could raise a format exception, while XML without supported currencies could become a fabricated MDL-only rate set.
+   - *Fix:* An empty HTTP body or `ValCurs` without `Valute` returns `null`, signaling no publication to `RateLookupService`. If all XML currencies are unsupported, parsing fails without inventing an MDL-only set.
+4. **HTTP resources and cancellation (`BnmRateClient`)**
+   - *Issue:* `HttpResponseMessage` was not guaranteed to be disposed with `using`, `cts.Token` did not cover `ReadAsStringAsync`, and external cancellation could appear as a timeout.
+   - *Fix:* Added `using (response)`, passed the timeout to `ReadAsStringAsync(cts.Token)`, and propagated external cancellation when `cancellationToken.IsCancellationRequested`.
+5. **Strict cache validation and integrity (`JsonCacheStore`)**
+   - *Issue:* Cache reads substituted the root date for corrupt `Entry.PublicationDate` values and automatically added `MDL=1` to invalid files; writes did not validate RateSet completeness.
+   - *Fix:* Reads verify `Version == "1.0"`, nonempty `SourceUrl`/timestamps, matching entry/root dates, and an originally present `MDL=1` entry. Writes validate `RateSet` before creating a temporary file.
+6. **Currency validation before saving (`ConversionService`)**
+   - *Issue:* BNM responses were cached before checking the requested currencies, potentially replacing a valid cache with incomplete data.
+   - *Fix:* Source/target currency checks now precede `SaveCacheAsync`.
+7. **Matching validator grammars (`AmountValidator` and `site.js`)**
+   - *Issue:* Server validation accepted leading `+` and `.5`, although the specification requires an explicit integer part.
+   - *Fix:* Reject leading `+`, a missing integer part (`.5`), a separator without fractional digits (`1.`), and spaces. The same logic is used in client JavaScript.
+8. **Shell environment restriction**
+   - *Issue:* Permission checks rejected interactive `run_command` calls.
+   - *Fix:* Core, Infrastructure, Web, and Tests were created using standard platform file tools without bypassing security restrictions. The orchestrator built the solution.
+9. **Fractional amount formatting (`Index.cshtml`)**
+   - *Issue:* `ToString("N2")` rounded same-currency source/target amounts, for example 123.4567 to 123.46.
+   - *Fix:* Same-currency and original source amounts use up to 4 exact places (`ToString("0.####", CultureInfo.InvariantCulture)`); different-currency results use 2 places (`ToString("N2", CultureInfo.InvariantCulture)`).
+10. **Removing implementation details from result cards (`Index.cshtml`)**
+    - *Issue:* Same-currency cards contained unnecessary explanations about absent network/cache operations.
+    - *Fix:* Removed these details, retaining the selected date and concise rate-not-required status.
+11. **Future-date validation in JavaScript (`site.js`)**
+    - *Issue:* Only nonempty dates were checked, so browsers without strict `max` enforcement could submit future dates.
+    - *Fix:* Added `validateDate` checks for `validity.valid`, `rangeOverflow`, and `max`, a clear `#dateError`, and disabled `convertButton` when invalid.
+12. **Safe errors and logging (`Index.cshtml.cs`, `Error.cshtml`, `Error.cshtml.cs`)**
+    - *Issue:* Unexpected exception handlers displayed `ex.Message`; the standard `/Error` page was absent.
+    - *Fix:* Added `Pages/Error.cshtml` and its model with safe Russian text and `RequestId`. Injected `ILogger<IndexModel>` into `Index.cshtml.cs`; unexpected errors are logged server-side, while users receive a generic message without internal details.
+13. **CurrencyCode static initialization (`CurrencyCode.cs`)**
+    - *Issue:* The first actual Opera GX conversion raised `TypeInitializationException: The type initializer for 'CurrencyConverter.Core.Models.CurrencyCode' threw an exception. -> System.NullReferenceException` at line 34 after a constructor call from `.cctor` at line 8.
+    - *Cause:* Static instances `Mdl`, `Eur`, `Usd`, etc. preceded `SupportedCodes`. C# initializes static fields from top to bottom; `SupportedCodes` was `null` when `new("MDL")` ran.
+    - *Fix:* Moved `SupportedCodes` before currency instances. CurrencyCode was removed from claims of first-attempt correctness.
+14. **Strict cache schema version (`JsonCacheStore`)**
+    - *Issue:* DTO initialization `public string Version { get; set; } = "1.0"` accepted JSON without a `"version"` field because the default remained.
+    - *Fix:* Changed to `public string? Version { get; set; }` without a default; validation requires `dto.Version == "1.0"`.
+15. **Null JSON cache entries (`JsonCacheStore`)**
+    - *Issue:* `null` entries such as `[null]` in `"entries"` caused `NullReferenceException`.
+    - *Fix:* Used `List<CurrencyRateEntryDto?>?`; null/invalid entries reject the file as corrupt and return `null` (cache miss) without crashing.
+16. **Propagating external CancellationToken cancellation (`ConversionService`, `JsonCacheStore`)**
+    - *Issue:* `catch (Exception ex)` during cache saves/general loads swallowed `OperationCanceledException`, disguising cancellation as a cache warning or service error.
+    - *Fix:* Added `catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }` to propagate cancellation immediately.
+17. **Date underflow in historical lookup (`RateLookupService`)**
+    - *Issue:* `requestedDate.AddDays(-offset)` could throw `ArgumentOutOfRangeException` near `DateOnly.MinValue`.
+    - *Fix:* Added `if (requestedDate.DayNumber < offset) break;` to stay within the DateOnly range.
+18. **BNM publication-date limits (`RateLookupService`)**
+    - *Issue:* Valid XML with a publication older than 31 calendar days relative to the requested date was accepted.
+    - *Fix:* Added `if (rateSet.PublicationDate < requestedDate.AddDays(-MaxLookbackDays)) throw new RateSourceFormatException(...)` to enforce the 31-day lookup window.
+19. **Strict MDL validation (`BnmXmlParser`)**
+    - *Issue:* An explicit MDL entry with nominal/rate values other than 1 could enter the rate set.
+    - *Fix:* Explicit MDL requires both values to equal 1, otherwise `RateSourceFormatException` is raised. XML with no supported foreign currency is also rejected.
 
-| Требование / Область | Задача | Файл(ы) реализации | Статус |
+## 5. Conformance to the initial specification
+
+| Requirement / area | Task | Implementation file(s) | Status |
 | --- | --- | --- | --- |
-| Решение и проекты | T001 | `CurrencyConverter.sln`, `src/*/*.csproj`, `tests/CurrencyConverter.Tests/CurrencyConverter.Tests.csproj` | Реализовано |
-| Конвенции сборки .NET 8 | T002 | `Directory.Build.props` | Реализовано |
-| Доменные модели и контракты | T003 | `src/CurrencyConverter.Core/Models/*.cs` | Реализовано |
-| Интерфейсы сервисов | T004 | `src/CurrencyConverter.Core/Contracts/*.cs` | Реализовано |
-| Валидация суммы (10^12, . и ,, без пробелов/экспонент) | T005 | `src/CurrencyConverter.Core/Validation/AmountValidator.cs`, `src/CurrencyConverter.Web/wwwroot/js/site.js` | Реализовано |
-| Валидация валют и времени Кишинёва | T006 | `src/CurrencyConverter.Core/Validation/RequestValidator.cs`, `src/CurrencyConverter.Infrastructure/Time/ChisinauClock.cs` | Реализовано |
-| Формула через MDL, номиналы и AwayFromZero | T007 | `src/CurrencyConverter.Core/Calculation/CurrencyCalculator.cs` | Реализовано |
-| Одинаковые валюты без вызова сети/кэша | T008 | `src/CurrencyConverter.Core/Calculation/ConversionService.cs`, `src/CurrencyConverter.Web/Pages/Index.cshtml` | Реализовано |
-| Поиск даты назад до 31 дня, остановка при ошибке | T009 | `src/CurrencyConverter.Core/Calculation/RateLookupService.cs` | Реализовано |
-| HTTP BNM (таймаут 10 с, CancellationToken) | T010 | `src/CurrencyConverter.Infrastructure/Bnm/BnmRateClient.cs` | Реализовано |
-| Парсинг ValCurs XML, дубликаты, номинал>0, MDL=1 | T011 | `src/CurrencyConverter.Infrastructure/Bnm/BnmXmlParser.cs` | Реализовано |
-| Атомарный JSON-кэш и защита от сбоев | T012 | `src/CurrencyConverter.Infrastructure/Caching/JsonCacheStore.cs` | Реализовано |
-| Проверка пригодности кэша (не позже запроса) | T013 | `src/CurrencyConverter.Core/Validation/CacheValidator.cs` | Реализовано |
-| Оркестрация: явное согласие на кэш, предупреждения | T014 | `src/CurrencyConverter.Core/Calculation/ConversionService.cs` | Реализовано |
-| Веб-интерфейс Razor Pages, форма, подписи | T015 | `src/CurrencyConverter.Web/Pages/Index.cshtml`, `Index.cshtml.cs` | Реализовано |
-| Клиентская валидация, блокировка submit, стили | T016 | `src/CurrencyConverter.Web/wwwroot/css/site.css`, `wwwroot/js/site.js` | Реализовано |
-| Серверная валидация, рендеринг результата | T017 | `src/CurrencyConverter.Web/Pages/Index.cshtml`, `Index.cshtml.cs`, `ViewModels/ConversionViewModel.cs` | Реализовано |
-| Подтверждение кэша и предупреждения | T018 | `src/CurrencyConverter.Web/Pages/Index.cshtml`, `Index.cshtml.cs` | Реализовано |
-| Документация запуска и отчётность | T019 | `README.md`, `REPORT.md` | Реализовано |
-| Парсинг XML BNM и негативные сценарии | T020 | `tests/CurrencyConverter.Tests/Unit/BnmXmlParserTests.cs` | Реализовано |
-| Расчёт конверсий, AwayFromZero, overflow | T021 | `tests/CurrencyConverter.Tests/Unit/CurrencyCalculatorTests.cs` | Реализовано |
-| Валидация сумм (границы, форматы, ошибки) | T022 | `tests/CurrencyConverter.Tests/Unit/AmountValidatorTests.cs` | Реализовано |
-| Валидация запросов, допустимые даты, IClock | T023 | `tests/CurrencyConverter.Tests/Unit/RequestValidatorTests.cs` | Реализовано |
-| Поиск курсов назад до 31 дня, остановки | T024 | `tests/CurrencyConverter.Tests/Unit/RateLookupTests.cs` | Реализовано |
-| Оркестрация: bypass, offline, согласие на кэш | T025 | `tests/CurrencyConverter.Tests/Unit/ConversionServiceTests.cs` | Реализовано |
-| JSON-кэш: изоляция, чтение/запись, гонки | T026 | `tests/CurrencyConverter.Tests/Unit/JsonCacheStoreTests.cs` | Реализовано |
-| Команды запуска тестов и фактические результаты | T027 | README.md, REPORT.md, docs/TEST_RESULTS.md | Проверено |
-| Дополнительные проверки HTTP-клиента | T010 | tests/CurrencyConverter.Tests/Unit/BnmRateClientTests.cs | Проверено |
+| Solution and projects | T001 | `CurrencyConverter.sln`, `src/*/*.csproj`, `tests/CurrencyConverter.Tests/CurrencyConverter.Tests.csproj` | Implemented |
+| .NET 8 build conventions | T002 | `Directory.Build.props` | Implemented |
+| Domain models and contracts | T003 | `src/CurrencyConverter.Core/Models/*.cs` | Implemented |
+| Service interfaces | T004 | `src/CurrencyConverter.Core/Contracts/*.cs` | Implemented |
+| Amount validation (10^12, dot/comma, no spaces/exponents) | T005 | `src/CurrencyConverter.Core/Validation/AmountValidator.cs`, `src/CurrencyConverter.Web/wwwroot/js/site.js` | Implemented |
+| Currency and Chisinau-time validation | T006 | `src/CurrencyConverter.Core/Validation/RequestValidator.cs`, `src/CurrencyConverter.Infrastructure/Time/ChisinauClock.cs` | Implemented |
+| MDL formula, nominal values, AwayFromZero | T007 | `src/CurrencyConverter.Core/Calculation/CurrencyCalculator.cs` | Implemented |
+| Same currency without network/cache | T008 | `src/CurrencyConverter.Core/Calculation/ConversionService.cs`, `src/CurrencyConverter.Web/Pages/Index.cshtml` | Implemented |
+| Backward lookup up to 31 days; stop on error | T009 | `src/CurrencyConverter.Core/Calculation/RateLookupService.cs` | Implemented |
+| BNM HTTP (10-second timeout, CancellationToken) | T010 | `src/CurrencyConverter.Infrastructure/Bnm/BnmRateClient.cs` | Implemented |
+| ValCurs XML, duplicates, nominal>0, MDL=1 | T011 | `src/CurrencyConverter.Infrastructure/Bnm/BnmXmlParser.cs` | Implemented |
+| Atomic JSON cache and failure safety | T012 | `src/CurrencyConverter.Infrastructure/Caching/JsonCacheStore.cs` | Implemented |
+| Cache suitability (not newer than request) | T013 | `src/CurrencyConverter.Core/Validation/CacheValidator.cs` | Implemented |
+| Explicit cache consent and warnings | T014 | `src/CurrencyConverter.Core/Calculation/ConversionService.cs` | Implemented |
+| Razor Pages UI, form, labels | T015 | `src/CurrencyConverter.Web/Pages/Index.cshtml`, `Index.cshtml.cs` | Implemented |
+| Client validation, submit blocking, styles | T016 | `src/CurrencyConverter.Web/wwwroot/css/site.css`, `wwwroot/js/site.js` | Implemented |
+| Server validation and result rendering | T017 | `src/CurrencyConverter.Web/Pages/Index.cshtml`, `Index.cshtml.cs`, `ViewModels/ConversionViewModel.cs` | Implemented |
+| Cache confirmation and warnings | T018 | `src/CurrencyConverter.Web/Pages/Index.cshtml`, `Index.cshtml.cs` | Implemented |
+| Launch documentation and reporting | T019 | `README.md`, `REPORT.md` | Implemented |
+| BNM XML and negative cases | T020 | `tests/CurrencyConverter.Tests/Unit/BnmXmlParserTests.cs` | Implemented |
+| Conversion, AwayFromZero, overflow | T021 | `tests/CurrencyConverter.Tests/Unit/CurrencyCalculatorTests.cs` | Implemented |
+| Amount boundaries, formats, errors | T022 | `tests/CurrencyConverter.Tests/Unit/AmountValidatorTests.cs` | Implemented |
+| Request validation, valid dates, IClock | T023 | `tests/CurrencyConverter.Tests/Unit/RequestValidatorTests.cs` | Implemented |
+| Previous-rate lookup and stops | T024 | `tests/CurrencyConverter.Tests/Unit/RateLookupTests.cs` | Implemented |
+| Bypass, offline, cache confirmation | T025 | `tests/CurrencyConverter.Tests/Unit/ConversionServiceTests.cs` | Implemented |
+| JSON cache isolation, read/write, concurrency | T026 | `tests/CurrencyConverter.Tests/Unit/JsonCacheStoreTests.cs` | Implemented |
+| Test commands and actual results | T027 | README.md, REPORT.md, docs/TEST_RESULTS.md | Verified |
+| Additional HTTP client checks | T010 | tests/CurrencyConverter.Tests/Unit/BnmRateClientTests.cs | Verified |
 
-## История и доказательства
+## History and evidence
 
-- `634a898`: отдельный репозиторий и README до появления кода.
-- Ветка `feature/currency-converter`: PR №2 (реализация T001–T019 и исправления UI) прошёл проверку 9 браузерных сценариев в Opera GX и успешно слит.
-- Этап тестирования выполнен в `tests/currency-converter`, изменения переданы в main через PR №3.
-- Новый закрытый репозиторий: https://github.com/sam4ch/CurrencyConverter-Lab3.
-- PR спецификаций: https://github.com/sam4ch/CurrencyConverter-Lab3/pull/1 (закоммичен и слит до появления кода).
-- Реализация этапа тестов T020–T027 выполнена агентом Antigravity (Gemini 3.8 Flash High) без git-операций (commit/push/merge оставляются оркестратору).
-- Тестовые файлы созданы и зарегистрированы в решении, реальные дефекты устранены.
-- Команда `dotnet test` выполнена ассистентом: 162/162 теста прошли, пропусков нет.
-- Ручной чек-лист UI (M001–M007) отделён от автоматизированных тестов xUnit и остаётся отдельным подтверждённым артефактом (`docs/BROWSER_VALIDATION.md`).
+- `634a898`: separate repository and README before code.
+- `feature/currency-converter`: PR #2 (T001–T019 and UI fixes) passed 9 Opera GX browser scenarios and was merged.
+- Testing used `tests/currency-converter` and was merged into main through PR #3.
+- Repository, initially created private: https://github.com/sam4ch/bnm-currency-converter-web.
+- Specification PR: https://github.com/sam4ch/bnm-currency-converter-web/pull/1, committed and merged before code.
+- Antigravity (Gemini 3.8 Flash High) implemented T020–T027 without Git operations; commit/push/merge remained the orchestrator's responsibility.
+- Test files were created and registered in the solution; actual defects were fixed.
+- The assistant ran `dotnet test`: 162/162 tests passed, with no skips.
+- The manual UI checklist (M001–M007) remains a separate verified artifact from xUnit automation (`docs/BROWSER_VALIDATION.md`).
 
+## Final validation and result boundaries
 
-## Итоговая проверка и границы результата
+- `dotnet build CurrencyConverter.sln`: succeeded, 0 errors/warnings.
+- `dotnet test`: 162 passed, 0 failures, 0 skips; [group breakdown](docs/TEST_RESULTS.md).
+- Browser: Opera GX 138.0.6044.45, 10/10 scenarios, [report/screenshots](docs/BROWSER_VALIDATION.md). Checked live BNM, restart with cache, explicit consent, unsuitable dates, keyboard/loading behavior, and 1280/390 px widths.
+- Source recovery was verified in the same interface with a local test HTTP source: 503 → 200, with a successful retry. This is separate from live BNM.
+- Physical-phone/user acceptance was not performed; mobile width was emulated in the browser.
+- Antigravity created the main application code and 134 tests. The Codex assistant added 28 regression checks and final fixes, and performed review, build/test execution, browser automation, visual inspection, final documentation, and Git operations.
+- Stages are preserved through PRs: [specifications #1](https://github.com/sam4ch/bnm-currency-converter-web/pull/1), [implementation #2](https://github.com/sam4ch/bnm-currency-converter-web/pull/2), and [tests #3](https://github.com/sam4ch/bnm-currency-converter-web/pull/3).
 
-- `dotnet build CurrencyConverter.sln` — успешно, 0 ошибок и предупреждений.
-- `dotnet test` — 162 тестов прошли, 0 ошибок, 0 пропусков; [распределение по группам](docs/TEST_RESULTS.md).
-- Браузер: Opera GX 138.0.6044.45, 10/10 сценариев, [протокол и скриншоты](docs/BROWSER_VALIDATION.md). Проверены живой BNM, перезапуск с кэшем, явное согласие, неподходящая дата, keyboard/loading и ширины 1280/390 px.
-- Восстановление доступности источника проверено в том же интерфейсе через локальный тестовый HTTP-источник: 503 → 200, повторный запрос успешен. Это отдельно от реального BNM.
-- Физический телефон и пользовательская приёмка не проверялись; мобильная ширина эмулировалась в браузере.
-- Основной код приложения и 134 теста созданы Antigravity; дополнительные 28 regression-проверок и завершающие доработки выполнены ассистентом Codex. Ассистент также выполнил ревью, запуск сборки/тестов, браузерную автоматизацию, визуальный просмотр, финальное оформление документации и Git-операции.
-- Этапы сохранены через PR: [спецификации №1](https://github.com/sam4ch/CurrencyConverter-Lab3/pull/1), [реализация №2](https://github.com/sam4ch/CurrencyConverter-Lab3/pull/2), [тесты №3](https://github.com/sam4ch/CurrencyConverter-Lab3/pull/3).
+### Antigravity quota and final fixes
 
+Antigravity CLI reported `Individual quota reached` after producing the initial
+134 passing tests. No account switching or quota bypass was performed. Remaining
+review findings were fixed in the Codex chat: TimeProvider injection into
+ChisinauClock for real winter/summer date-boundary tests; nullable warning CS8619;
+a Nominal>1 fixture moved to supported EUR with effective-rate checks; and clearer
+error-page text. The 28 additional checks cover corrupt JSON metadata, preservation
+of valid cache files, missing currencies, same-currency cancellation, static
+initialization, amount overflow, and avoiding premature rounding. This was Codex
+work and must not be attributed to Antigravity.
 
-### Ограничение Antigravity и заключительные доработки
-
-Antigravity CLI сообщил `Individual quota reached` после создания исходного набора из 134 прошедших тестов. Переключение аккаунтов или обход квоты не выполнялись. Оставшиеся замечания ревью завершены в текущем чате Codex: внедрён TimeProvider в ChisinauClock для настоящей проверки зимней/летней границы суток; исправлено предупреждение nullable CS8619; фикстура Nominal>1 перенесена на поддерживаемую EUR с проверкой effective rate; уточнён текст страницы ошибки. Добавлены 28 проверок повреждённых метаданных JSON, неизменности хорошего файла, отсутствующей валюты, отмены same-currency, статической инициализации, переполнения суммы и запрета преждевременного округления. Это работа Codex, её нельзя приписывать Antigravity.
-
-Три фактически использованных запроса Antigravity опубликованы в [docs/prompts](docs/prompts); последующие уточнения и результаты ревью отражены в этом отчёте.
+The three actual Antigravity prompts are published in [docs/prompts](docs/prompts);
+later clarifications and review results are recorded in this report.

@@ -1,12 +1,12 @@
-# Результаты xUnit — 28.10.2026
+# xUnit results — October 28, 2026
 
-Фактически выполнено: **162 тестов прошли, 0 ошибок, 0 пропусков**.
+Actual execution: **162 tests passed, 0 failures, 0 skips**.
 
 ```powershell
 dotnet test
 ```
 
-| Группа | Проверок |
+| Group | Checks |
 | --- | ---: |
 | AmountValidatorTests | 48 |
 | BnmRateClientTests | 12 |
@@ -21,6 +21,9 @@ dotnet test
 | RateLookupTests | 9 |
 | RequestValidatorTests | 19 |
 
-Тесты используют фиксированные часы, XML-фикстуры, поддельный HTTP-обработчик и собственные временные файлы; обращений к BNM нет.
+Tests use fixed clocks, XML fixtures, a fake HTTP handler, and isolated temporary
+files; they do not contact BNM.
 
-Локальный машинный протокол: `.tools/test-results/lab3.trx` (не публикуется, как и runtime-данные). Браузерные проверки описаны отдельно в [BROWSER_VALIDATION.md](BROWSER_VALIDATION.md).
+Local machine-readable log: `.tools/test-results/lab3.trx` (not published, like
+other runtime data). Browser checks are documented separately in
+[BROWSER_VALIDATION.md](BROWSER_VALIDATION.md).

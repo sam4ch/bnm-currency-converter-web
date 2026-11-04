@@ -1,13 +1,13 @@
-# Проверка интерфейса — 28.10.2026
+# Interface validation — October 28, 2026
 
-Сценарии выполнены ассистентом в Opera GX 138.0.6044.45 через Playwright; скриншоты просмотрены визуально. Это отдельная браузерная проверка, не xUnit. Физический телефон не использовался.
+The assistant performed these scenarios in Opera GX 138.0.6044.45 through Playwright and inspected the screenshots visually. These were separate browser checks, not xUnit tests. No physical phone was used.
 
-- [x] M001: Ширины 1280 и 390 px: форма читаема, горизонтального переполнения нет.
-- [x] M002: Просмотрены русские подписи, сообщения ввода, успешный результат и ошибки.
-- [x] M003: Tab: сумма → исходная валюта → обмен → целевая валюта → дата → конвертация; фокус доступен.
-- [x] M004: Неверный ввод/будущая дата блокируют кнопку; во время запроса кнопка заблокирована, старый результат скрыт.
-- [x] M005: Кэш предложен без результата, повтор без согласия не применяет его; после подтверждения расчёт верен; более новый кэш отвергнут.
-- [x] M006: Одинаковые валюты возвращают четыре дробных знака без ссылки и даты курса; unit-тест дополнительно подтверждает отсутствие вызовов источника/кэша.
-- [x] M007: Проверены повторные запросы, invalid → valid, источник недоступен с/без кэша, восстановление тестового источника 503 → 200 в той же форме.
+- [x] M001: At widths of 1280 and 390 px, the form was readable and had no horizontal overflow.
+- [x] M002: Reviewed the Russian labels, input messages, successful result, and errors.
+- [x] M003: Tab order was amount → source currency → swap → target currency → date → conversion; keyboard focus was accessible.
+- [x] M004: Invalid input and future dates disabled the button; during a request, the button was disabled and the previous result was hidden.
+- [x] M005: Cached data was offered without displaying a result; retrying without consent did not apply it. After confirmation, the calculation was correct; newer cached data was rejected.
+- [x] M006: Same-currency conversion returned four decimal places without a rate link or date; a unit test additionally confirmed that neither the source nor the cache was called.
+- [x] M007: Checked repeated requests, invalid → valid input, source unavailability with and without a cache, and recovery of the test source from 503 → 200 in the same form.
 
-Подробности: [протокол](../../../docs/BROWSER_VALIDATION.md). Пользовательская приёмка на реальном устройстве остаётся отдельным действием студента.
+Details: [validation report](../../../docs/BROWSER_VALIDATION.md). User acceptance testing on a physical device remains a separate action for the student.

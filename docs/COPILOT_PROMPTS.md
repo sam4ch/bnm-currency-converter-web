@@ -1,61 +1,62 @@
-# Этап спецификаций в GitHub Copilot
+# Specification stage in GitHub Copilot
 
-Открыть корень `lab3` в VS Code и чат Copilot в режиме Agent.
-Отправлять команды отдельно, дожидаясь завершения и проверяя результат.
-Имена ниже соответствуют установленному Spec Kit 1.2.4 (skills layout).
-Это запросы для агента, не команды PowerShell.
+Open the `lab3` repository root in VS Code and use Copilot chat in Agent mode.
+Send each command separately, wait for completion, and verify its result.
+The names below match the installed Spec Kit 1.2.4 skills layout.
+These are agent prompts, not PowerShell commands.
+The prompts below are English translations of the documented requests.
 
-## 1. Конституция
-
-```text
-/speckit-constitution Прочитай docs/ASSIGNMENT_REQUIREMENTS.md. Создай конституцию проекта конвертера валют: точность decimal с учётом номинала BNM, графический русскоязычный веб-интерфейс, отказоустойчивость и постоянный кэш, проверка ввода на клиенте и сервере, изолируемые unit-тесты. Обязательны спецификации до кода, отдельные ветки и PR, передача реализации Antigravity и достоверный отчёт. Сейчас только документация, без реализации и git commit/push.
-```
-
-Ожидаемый результат: заполненный `.specify/memory/constitution.md`,
-а не исходный шаблон с `[PROJECT_NAME]`.
-
-## 2. Спецификация
+## 1. Constitution
 
 ```text
-/speckit-specify Прочитай docs/ASSIGNMENT_REQUIREMENTS.md и конституцию. Опиши конвертер валют с графическим русскоязычным интерфейсом для студента в Молдове. Укажи пользовательские сценарии, требования с идентификаторами, критерии приёмки и пограничные случаи: валидация, одинаковые валюты, дата курса и BNM, номинал, выходные, отсутствие сети, явное согласие на использование постоянного кэша, повреждённый кэш и исторические даты. Включи все ограничения из входных требований. Создай штатные артефакты Spec Kit; не пиши код приложения и тестов, не делай commit/push и не переключай git-ветку.
+/speckit-constitution Read docs/ASSIGNMENT_REQUIREMENTS.md. Create a constitution for the currency converter project: decimal precision with BNM nominal values, a graphical Russian-language web interface, fault tolerance and a persistent cache, client/server input validation, and isolated unit tests. Specifications must precede code; require separate branches and PRs, implementation handoff to Antigravity, and a factual report. Documentation only for now: no implementation or git commit/push.
 ```
 
-## 3. Уточнения
+Expected result: a completed `.specify/memory/constitution.md`,
+not the original template containing `[PROJECT_NAME]`.
+
+## 2. Specification
 
 ```text
-/speckit-clarify Проверь спецификацию на неоднозначности. Используй решения из docs/ASSIGNMENT_REQUIREMENTS.md: BNM XML, выбранная дата по Кишинёву, поиск назад до 31 дня только при отсутствии публикации, явное согласие на кэш, запрет кэша из будущего относительно запроса, decimal и округление только в конце. Если остаётся существенный вопрос, задай его. Не начинай реализацию.
+/speckit-specify Read docs/ASSIGNMENT_REQUIREMENTS.md and the constitution. Describe a currency converter with a graphical Russian-language interface for a student in Moldova. Include user scenarios, identified requirements, acceptance criteria, and edge cases: validation, same-currency conversion, rate date and BNM, nominal values, weekends, offline behavior, explicit confirmation to use a persistent cache, corrupt cache, and historical dates. Include every constraint from the input requirements. Create standard Spec Kit artifacts; do not write application/test code, commit/push, or switch Git branches.
 ```
 
-## 4. Технический план
+## 3. Clarification
 
 ```text
-/speckit-plan Прочитай docs/ASSIGNMENT_REQUIREMENTS.md и спецификацию. Используй C#/.NET 8, ASP.NET Core Razor Pages, отдельную Core-библиотеку для расчётов и валидации, HttpClient, System.Xml.Linq, постоянный JSON-кэш с атомарной записью, xUnit. Раздели парсер, получение курсов/поиск доступного дня, кэш и расчёты; HTTP и время подменяемы в тестах. Подготовь plan.md, research.md, data-model.md, quickstart.md и необходимые контракты. Зафиксируй источник BNM и семантику Value/Nominal по первоисточнику. Код приложения, csproj и тесты пока не создавать. Без git commit/push.
+/speckit-clarify Check the specification for ambiguity. Use the decisions from docs/ASSIGNMENT_REQUIREMENTS.md: BNM XML, selected dates in Chisinau time, backward lookup up to 31 days only when publication is missing, explicit cache confirmation, no cache newer than the requested date, decimal arithmetic, and final-only rounding. If a material question remains, ask it. Do not start implementation.
 ```
 
-## 5. Проверочный список требований
+## 4. Technical plan
 
 ```text
-/speckit-checklist Создай checklist качества требований для точности расчётов и Nominal, XML-ошибок, сетевых ошибок, поиска предыдущего курса, постоянного кэша с явным подтверждением, исторических дат, UI-валидации и соответствия процессу лабораторной. Это проверка требований, не свидетельство выполненной реализации.
+/speckit-plan Read docs/ASSIGNMENT_REQUIREMENTS.md and the specification. Use C#/.NET 8, ASP.NET Core Razor Pages, a separate Core library for calculations and validation, HttpClient, System.Xml.Linq, a persistent JSON cache with atomic writes, and xUnit. Separate the parser, fetching/available-date lookup, cache, and calculations; HTTP and time must be replaceable in tests. Prepare plan.md, research.md, data-model.md, quickstart.md, and the required contracts. Verify the BNM source and Value/Nominal semantics against the primary source. Do not create application code, csproj files, or tests yet. No git commit/push.
 ```
 
-## 6. Задачи
+## 5. Requirements checklist
 
 ```text
-/speckit-tasks Создай конкретные задачи с идентификаторами, зависимостями и путями файлов. Выдели задачи реализации в ветке feature/currency-converter и тестов в ветке tests/currency-converter. Покрой все критерии из docs/ASSIGNMENT_REQUIREMENTS.md и обозначь соответствие задач требованиям. Сейчас только tasks.md, не выполнять задачи. Не делай git commit/push.
+/speckit-checklist Create a requirements-quality checklist for calculation accuracy and Nominal, XML errors, network failures, previous-rate lookup, persistent cache with explicit confirmation, historical dates, UI validation, and compliance with the lab process. This checks requirements; it is not evidence of completed implementation.
 ```
 
-## 7. Анализ перед реализацией
+## 6. Tasks
 
 ```text
-/speckit-analyze Проверь согласованность constitution.md, spec.md, plan.md, tasks.md и docs/ASSIGNMENT_REQUIREMENTS.md. Сохрани фактический отчёт в папке активной спецификации под именем analysis.md. Укажи покрытие требований задачами, противоречия и нерешённые вопросы. Не объявляй код реализованным и тесты пройденными. Реализация запрещена на этом этапе.
+/speckit-tasks Create concrete tasks with identifiers, dependencies, and file paths. Separate implementation tasks in feature/currency-converter from tests in tests/currency-converter. Cover every criterion from docs/ASSIGNMENT_REQUIREMENTS.md and map tasks to requirements. Create tasks.md only for now; do not execute tasks or perform git commit/push.
 ```
 
-Исправить реальные противоречия и повторить анализ, если нужно.
-После проверки закоммитить документы в `specs/currency-converter`,
-создать PR и слить его в `main`. До этого нельзя запускать реализацию.
+## 7. Pre-implementation analysis
 
-## Следующий агент
+```text
+/speckit-analyze Check constitution.md, spec.md, plan.md, tasks.md, and docs/ASSIGNMENT_REQUIREMENTS.md for consistency. Save the factual report as analysis.md in the active specification folder. Identify requirement-to-task coverage, contradictions, and unresolved questions. Do not claim code is implemented or tests have passed. Implementation is prohibited at this stage.
+```
 
-После слияния PR использовать [ANTIGRAVITY_HANDOFF.md](ANTIGRAVITY_HANDOFF.md).
-Команду `/speckit-implement` в Copilot для этой лабораторной не запускать:
-по заданию код по документам должен собирать Google Antigravity.
+Fix actual contradictions and rerun analysis if necessary.
+After verification, commit documents in `specs/currency-converter`,
+create a PR, and merge it into `main`. Implementation must not start before this.
+
+## Next agent
+
+After the PR is merged, use [ANTIGRAVITY_HANDOFF.md](ANTIGRAVITY_HANDOFF.md).
+Do not run `/speckit-implement` in Copilot for this lab: the assignment requires
+Google Antigravity to build the application from the documents.
