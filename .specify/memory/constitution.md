@@ -7,7 +7,7 @@ Sync Impact Report
 - Deferred TODOs: none
 -->
 
-# Конституция проекта конвертера валют
+# Currency Converter Project Constitution
 
 ## Core Principles
 

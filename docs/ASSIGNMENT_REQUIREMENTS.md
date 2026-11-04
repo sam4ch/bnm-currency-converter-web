@@ -1,98 +1,97 @@
-# Входные требования лабораторной №3
+# Lab 3 Input Requirements
 
-Это исходные данные для Copilot, а не сгенерированная спецификация Spec Kit.
-Источник: предоставленный студентом PDF лабораторной №3, прочитан целиком.
-Выбран основной вариант: конвертер валют, не альтернативный NASA NEO Tracker.
+These are inputs for Copilot, not a generated Spec Kit specification.
+Source: the Lab 3 PDF supplied by the student, read in full.
+The selected main assignment is the currency converter, not the alternative NASA NEO Tracker.
 
-## Процесс и доказательства
+## Process and evidence
 
-1. Новый отдельный GitHub-репозиторий, не репозиторий лабораторных 1/2.
-2. Spec Kit инициализируется с интеграцией `copilot`.
-3. Copilot в VS Code выполняет конституцию, спецификацию, план, задачи
-   и проверку согласованности; промежуточные результаты проверяются.
-4. Документы спецификации коммитятся до появления реализации.
-5. Реализацию по сохранённым задачам выполняет Google Antigravity.
-6. Отдельные ветки для спецификаций, реализации и тестов; все слияния
-   в `main` через Pull Request. Коммиты отражают реальный процесс.
-7. REPORT.md заполняется по фактам: источник, реальные модели Antigravity
-   и этапы их применения, удачные результаты, конкретные ошибки и исправления,
-   соответствие реализации первоначальной спецификации.
-8. Не выдумывать использование инструментов, моделей, тесты, ошибки агента,
-   скриншоты и выполнение этапов. Если этап не выполнен, так и указать.
+1. Create a separate GitHub repository, distinct from Labs 1/2.
+2. Initialize Spec Kit with the `copilot` integration.
+3. Use Copilot in VS Code for the constitution, specification, plan, tasks,
+   and consistency analysis, checking intermediate results.
+4. Commit specification documents before writing implementation code.
+5. Use Google Antigravity to implement the saved tasks.
+6. Use separate specification, implementation, and test branches; merge all
+   changes into `main` through pull requests. Commits must reflect the actual process.
+7. Base REPORT.md on facts: source, actual Antigravity models and their stages,
+   successful results, specific errors and fixes, and conformance to the initial specification.
+8. Do not invent tool/model use, tests, agent errors, screenshots, or completed
+   stages. State explicitly when a stage has not been performed.
 
-## Пользовательские функции
+## User features
 
-- Русскоязычный графический веб-интерфейс: сумма, исходная и целевая валюты,
-  выбранная дата курса, кнопка конвертации, результат, источник и дата курса.
-- Кнопка неактивна, пока обязательные поля пусты или некорректны, а также
-  во время запроса. Проверка выполняется дополнительно на сервере.
-- Пустая строка, буквы, отрицательная сумма, ноль, переполнение,
-  неподдерживаемая валюта и некорректная дата дают понятную ошибку.
-- Сумма принимает точку или запятую как десятичный разделитель, без группировки
-  тысяч и экспоненциальной записи. Разумное ограничение: до 1 000 000 000 000,
-  максимум четыре знака после разделителя. Неоднозначные записи отклоняются.
-- Одинаковые валюты возвращают исходную сумму без деления и сетевого запроса.
-- Выбор даты по умолчанию: сегодня по времени Кишинёва. Будущая дата запрещена.
-- Обмен исходной и целевой валют, понятные состояния загрузки и ошибок,
-  удобный интерфейс на телефоне и компьютере, подписи полей и управление клавиатурой.
+- Russian-language graphical web UI: amount, source/target currencies, selected
+  rate date, conversion button, result, source, and rate date.
+- Disable the button while required fields are empty/invalid and during requests.
+  Validate on the server as well.
+- Empty input, letters, negative or zero amounts, overflow, unsupported currencies,
+  and invalid dates must produce clear errors.
+- Accept a dot or comma as the decimal separator, without thousands grouping or
+  exponential notation. Use a reasonable limit of 1,000,000,000,000 and at most
+  four decimal places. Reject ambiguous forms.
+- Same-currency conversion returns the original amount without division or a network request.
+- Default to today's date in Chisinau time. Reject future dates.
+- Include currency swapping, clear loading/error states, usable mobile/desktop
+  layouts, field labels, and keyboard navigation.
 
-## Источник и математика
+## Source and calculations
 
-- Источник: официальный BNM XML по HTTPS, API-ключ не нужен:
+- Source: official BNM XML over HTTPS, with no API key:
   `https://www.bnm.md/en/official_exchange_rates?get_xml=1&date=DD.MM.YYYY`.
-- Минимальные валюты: MDL, EUR, USD, RON, GBP; только действительно доступные
-  в проверенном ответе. MDL добавляется как базовая валюта с курсом 1.
-- `Value / Nominal` означает количество MDL за одну единицу валюты.
-- Формула: `amount * sourceMdlPerUnit / targetMdlPerUnit`.
-- Все расчёты выполняются в `decimal`; результат округляется до двух знаков
-  только в конце, по правилу `MidpointRounding.AwayFromZero`.
-- Обратное направление рассчитывается из той же таблицы курсов.
-- В интерфейсе показываются дата фактически использованного курса, выбранная
-  дата, источник со ссылкой и время успешного получения. Курс справочный.
-- Если BNM сразу вернул более ранний курс, показывать его реальную дату
-  и предупреждение; не подменять её датой пользовательского запроса.
-- Пустой ответ или отсутствие публикации на выбранную дату: поиск последнего
-  доступного курса назад от выбранного дня, не более 31 календарного дня.
-  При исчерпании поиска показать ошибку и предложить подходящий кэш.
-- Ошибки сети, HTTP, тайм-аут, неверный XML или невалидные данные не должны
-  приводить к падению либо отображению фиктивного результата.
-- Пустой набор валют, отсутствующая дата, будущая относительно запроса дата,
-  дубликаты кодов, нулевой/отрицательный номинал или курс отклоняются.
-- Сетевые тайм-ауты не должны суммироваться в минутное ожидание при отсутствии
-  связи: прекращать поиск при сетевой ошибке, а не повторять её для каждой даты.
+- Required currencies: MDL, EUR, USD, RON, GBP, using only currencies actually
+  present in a validated response. Add MDL as the base currency at a rate of 1.
+- `Value / Nominal` is the number of MDL per unit of a currency.
+- Formula: `amount * sourceMdlPerUnit / targetMdlPerUnit`.
+- Perform all calculations with `decimal`; round the result to two places only
+  at the end using `MidpointRounding.AwayFromZero`.
+- Calculate the inverse direction from the same rate table.
+- Show the actual rate date, selected date, source link, and successful retrieval
+  timestamp. Explain that the rate is for reference.
+- If BNM returns an earlier rate immediately, show its actual date and a warning;
+  do not substitute the user's requested date.
+- For an empty response or no publication on the selected date, search backward
+  for the latest available rate, no more than 31 calendar days. If exhausted,
+  show an error and offer a suitable cache.
+- Network/HTTP failures, timeouts, malformed XML, or invalid data must not crash
+  the app or produce a fabricated result.
+- Reject empty currency sets, missing dates, dates later than the requested date,
+  duplicate codes, and zero/negative nominal values or rates.
+- Network timeouts must not accumulate into a minutes-long wait while offline:
+  stop the lookup on network failure instead of repeating it for every date.
 
-## Постоянный кэш и отсутствие сети
+## Persistent cache and offline behavior
 
-- Последний успешно проверенный ответ сохраняется локально в файл и доступен
-  после перезапуска сервера. Папка кэша не коммитится в Git.
-- Запись атомарная, конкурентные запросы не повреждают файл. Неверный ответ
-  не перезаписывает хороший кэш. Ошибка записи не уничтожает полученный курс,
-  но пользователь узнаёт, что кэш не удалось сохранить.
-- При недоступности источника: понятное сообщение и явное предложение
-  «Использовать сохранённый курс» с его датой. Не применять кэш молча.
-- Повреждённый файл кэша обрабатывается без падения.
-- Для исторической даты нельзя применять кэш с датой позже запрошенной.
-- При отсутствии подходящего кэша объяснить, что расчёт по разным валютам
-  сейчас невозможен, и дать повторить запрос.
+- Save the latest successfully validated response to a local file that survives
+  server restarts. Do not commit the cache folder to Git.
+- Write atomically so concurrent requests cannot corrupt the file. An invalid
+  response must not overwrite valid cached data. Write failure must preserve
+  the fetched rate, while informing the user that the cache could not be saved.
+- If the source is unavailable, show a clear message and an explicit offer to
+  use the saved rate with its date. Never apply the cache silently.
+- Handle a corrupt cache file without crashing.
+- For historical requests, do not use a cache newer than the requested date.
+- If no suitable cache exists, explain that conversion between different
+  currencies is currently unavailable and allow retrying.
 
-## Технические решения для этапа плана
+## Technical choices for the planning stage
 
-C#, .NET 8, ASP.NET Core Razor Pages, небольшая Core-библиотека с чистой
-математикой и валидацией, HttpClient, System.Xml.Linq, JSON-файл кэша,
-xUnit. Без обязательных Node.js, базы данных, авторизации и платных сервисов.
-Модуль получения данных и время должны подменяться в тестах.
+C#, .NET 8, ASP.NET Core Razor Pages, a small Core library with pure calculation
+and validation logic, HttpClient, System.Xml.Linq, a JSON cache file, and xUnit.
+No mandatory Node.js, database, authentication, or paid services.
+The data provider and clock must be replaceable in tests.
 
-## Обязательная проверка
+## Required validation
 
-- Unit-тесты парсинга корректного BNM XML, включая Nominal > 1 и MDL.
-- Unit-тесты прямой, обратной, кросс-конвертации, одинаковых валют,
-  округления и переполнения.
-- Unit-тесты пустого/повреждённого XML, неположительных значений,
-  дубликатов, отсутствующей даты и отсутствующих валют.
-- Unit-тесты валидации пользовательского ввода и обеих десятичных форм.
-- Тесты offline с кэшем и без, неподходящего по дате/повреждённого кэша,
-  поиска предыдущей публикации и сохранения кэша между экземплярами сервиса.
-- Тесты работают с фикстурами и поддельным HTTP-обработчиком, без реального BNM.
-- Одна команда из корня: `dotnet test`. Финальная команда и запуск веб-приложения
-  описываются в README после проверки на реальном проекте.
-- Отдельная ручная проверка браузерного UI, не выдавать её за unit-тесты.
+- Unit tests for valid BNM XML parsing, including Nominal > 1 and MDL.
+- Unit tests for direct, inverse, cross-rate, and same-currency calculations,
+  rounding, and overflow.
+- Unit tests for empty/corrupt XML, nonpositive values, duplicate codes,
+  missing dates, and missing currencies.
+- Unit tests for input validation and both decimal separator forms.
+- Offline tests with/without a cache, unsuitable dates/corrupt cache, previous
+  publication lookup, and cache persistence across service instances.
+- Use fixtures and fake HTTP handlers, not live BNM, in tests.
+- One command from the root: `dotnet test`. Document the final command and web
+  launch instructions in README after checking them against the actual project.
+- Check the browser UI manually as a separate activity; do not present this as unit testing.

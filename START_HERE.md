@@ -1,24 +1,25 @@
-# Начало работы: лабораторная №3
+# Getting started: Lab 3
 
-Приложение, спецификации и тесты находятся в этом репозитории.
-Актуальные команды запуска, результаты проверок и структура:
+The application, specifications, and tests are in this repository.
+For current launch commands, validation results, and project structure, see
 **[README.md](README.md)**.
 
+Open a PowerShell terminal in the repository root:
+
 ```powershell
-Set-Location -LiteralPath 'C:\Downloads\Study\4 курс\PSI\lab3'
 dotnet run --project .\src\CurrencyConverter.Web\CurrencyConverter.Web.csproj --urls http://localhost:5080
 ```
 
-Откройте http://localhost:5080. Требуется .NET SDK 8+ с поддержкой .NET 8.
+Open http://localhost:5080. Requires .NET SDK 8+ with .NET 8 support.
 
-Материалы для защиты:
+Materials for the lab presentation:
 
-- [Отчёт и фактическое применение ИИ](REPORT.md).
-- [Журнал этапов](docs/PROCESS_LOG.md).
-- [Результаты браузерной проверки](docs/BROWSER_VALIDATION.md).
-- [Конституция](.specify/memory/constitution.md), [спецификация](specs/001-currency-converter/spec.md), [план](specs/001-currency-converter/plan.md), [задачи](specs/001-currency-converter/tasks.md).
-- PR: [спецификации №1](https://github.com/sam4ch/CurrencyConverter-Lab3/pull/1), [реализация №2](https://github.com/sam4ch/CurrencyConverter-Lab3/pull/2), [тесты №3](https://github.com/sam4ch/CurrencyConverter-Lab3/pull/3).
+- [Report and actual AI use](REPORT.md).
+- [Process log](docs/PROCESS_LOG.md).
+- [Browser validation results](docs/BROWSER_VALIDATION.md).
+- [Constitution](.specify/memory/constitution.md), [specification](specs/001-currency-converter/spec.md), [plan](specs/001-currency-converter/plan.md), and [tasks](specs/001-currency-converter/tasks.md).
+- PRs: [specifications #1](https://github.com/sam4ch/bnm-currency-converter-web/pull/1), [implementation #2](https://github.com/sam4ch/bnm-currency-converter-web/pull/2), and [tests #3](https://github.com/sam4ch/bnm-currency-converter-web/pull/3).
 
-Spec Kit и Antigravity использовались при разработке. Для обычного запуска
-готового приложения устанавливать их и повторять авторизацию не нужно.
-Локальные инструменты `.tools/`, коды авторизации и рабочий кэш не публикуются.
+Spec Kit and Antigravity were used during development. To run the completed
+application normally, you do not need to install them or repeat authorization.
+Local tools in `.tools/`, authorization codes, and runtime cache are not published.
